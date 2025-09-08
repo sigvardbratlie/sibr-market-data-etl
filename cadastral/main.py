@@ -1,5 +1,4 @@
 import os
-
 from kartverkets_api import kartverketsAPI
 from sibr_module import BigQuery,Logger
 import argparse

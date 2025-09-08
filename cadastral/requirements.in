@@ -1,0 +1,16 @@
+pandas
+numpy
+google-cloud-secret-manager
+google-cloud-bigquery
+google-cloud-storage
+google-cloud-logging
+pandas_gbq
+requests
+zeep
+bigframes
+sibr-module
+sibr-api
+kartverkets-api
+python-dotenv
+aiohttp
+httpx

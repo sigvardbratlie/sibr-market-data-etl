@@ -42,6 +42,14 @@ steps:
     - 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/modeling:${COMMIT_SHA}'
     - './modeling'
 
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-cadastral'
+  args:
+    - 'build'
+    - '-t'
+    - 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/cadastral:${COMMIT_SHA}'
+    - './cadastral'
+
 
 # ---- STEP 2: Push to Artifact Registry ----
 - name: 'gcr.io/cloud-builders/docker'
@@ -58,6 +66,11 @@ steps:
   id: 'push-modeling'
   waitFor: ['build-modeling']
   args: ['push', 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/modeling:${COMMIT_SHA}']
+
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-cadastral'
+  waitFor: ['build-modeling']
+  args: ['push', 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/cadastral:${COMMIT_SHA}']
 
 # ---- STEG 3: Kompiler og opprett/oppdater pipeline-schedule ----
 - name: 'python:3.11'

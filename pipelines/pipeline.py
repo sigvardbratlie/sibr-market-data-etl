@@ -91,6 +91,11 @@ def create_pipeline(
     geocoding_task.set_display_name('3. Geocoding Addresses')
     geocoding_task.set_caching_options(False)
 
+    # Step 4: Run cadastral
+    cadastral_task = run_geocoding().after(cleaning_task)
+    cadastral_task.set_display_name('4. Get cadastral data')
+    cadastral_task.set_caching_options(False)
+
     # # Step 4: Run cleaning and prediction
     # clean_predict_task = run_predict().after(geocoding_task)
     # clean_predict_task.set_display_name('4. Predict Data')
