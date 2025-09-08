@@ -502,7 +502,7 @@ def transform_coop(dataframe : pd.DataFrame,request_cols) -> pd.DataFrame:
 
 async def main():
     logger = Logger("kartverketMain")
-    secret = SecretsManager(logger = logger)
+    secret = SecretsManager(logger = logger,project_id="sibr-market")
     api_key = secret.get_secret("GRUNNBOK_API_KEY")
     if api_key:
         os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
