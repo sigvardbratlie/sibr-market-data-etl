@@ -7,14 +7,6 @@ import pandas as pd
 from dotenv import load_dotenv
 load_dotenv()
 
-secret = SecretsManager()
-api_key = secret.get_secret("GRUNNBOK_API_KEY")
-if api_key:
-    os.environ["GRUNNBOK_USERNAME"]="sibrprod"
-    os.environ["GRUNNBOK_PASSWORD"]=api_key
-else:
-    raise PermissionError("No API key found")
-
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 
@@ -510,6 +502,13 @@ def transform_coop(dataframe : pd.DataFrame,request_cols) -> pd.DataFrame:
 
 async def main():
     logger = Logger("kartverketMain")
+    secret = SecretsManager(logger = logger)
+    api_key = secret.get_secret("GRUNNBOK_API_KEY")
+    if api_key:
+        os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
+        os.environ["GRUNNBOK_PASSWORD"] = api_key
+    else:
+        raise PermissionError("No API key found")
     api = kartverketsAPI(logger=logger)
     bq = BigQuery(logger=logger,project_id="sibr-market")
 
