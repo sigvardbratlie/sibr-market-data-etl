@@ -14,10 +14,12 @@ import json
 import abc
 from dotenv import load_dotenv
 
-class geoApi(ApiBase):
+class DataApi(ApiBase):
     def __init__(self, logger = None):
         super().__init__(logger_name='nominatim', logger = logger)
         self.bq = BigQuery(project_id = "sibr-market", logger = logger)
+        secret = SecretsManager(project_id="sibr-market")
+        self.sv_api_key = secret.get_secret("STATENS_VEGVESEN_API_KEY")
 
     def _encode_address(self, address):
 
@@ -224,12 +226,99 @@ class geoApi(ApiBase):
                                        "undernummer" : "FLOAT"}
                       )
 
+    async def get_car(self,kjennemerke):
+        url = f"https://www.vegvesen.no/ws/no/vegvesen/kjoretoy/felles/datautlevering/enkeltoppslag/kjoretoydata?kjennemerke={kjennemerke}"
+        headers = {"SVV-Authorization": f"Apikey {self.sv_api_key}"}
+        logging_rate = 500
+        try:
+            response = await self.fetch_single(url, headers=headers, timeout=30)
+            if response:
+                self.ok_responses += 1
+                if self.ok_responses % logging_rate == 0:
+                    self.logger.debug(f'The {logging_rate}th successful response with kjennemerke: {kjennemerke}')
+                return response
+            else:
+                self.fail_responses += 1
+                if self.fail_responses % logging_rate == 0:
+                    self.logger.error(f'The {logging_rate}th Failed response with kjennemerke: {response.status_code}')
+                return None
+        except NotFoundError:
+            self.fail_responses += 1
+            self.logger.warning(f'Car with kjennemerke: {kjennemerke} not found. 404 Error')
+            return None
+
+    def transform_singe_car(self, response):
+        item_id, res = response
+        if res:
+            result = res.get('kjoretoydataListe')
+            if result and isinstance(result, list):
+                base = result[0]
+            new_base = {}
+            for k, v in base.items():
+                if isinstance(v, list) and v:
+                    if len(v) == 1:
+                        new_base[k] = v[0]
+                    else:
+                        new_base[k] = v
+                else:
+                    new_base[k] = v
+            df = pd.json_normalize(new_base)
+            df["item_id"] = item_id
+
+            def go_deep(df):
+                for col in df.columns:
+                    e = df[col].iloc[0]
+                    if isinstance(e, list) and e:
+                        # print(f'Column {col} has is a list')
+                        if e:
+                            for element in e:
+                                if isinstance(element, dict) and element:
+                                    for k, v in element.items():
+                                        if v:
+                                            df[f'{col}_{k}'] = [v]
+                                    df.drop(columns=[col], inplace=True, errors='ignore')
+                                elif isinstance(element, list) and element:
+                                    print(f'Column {col} has is a list within a list')
+                    elif isinstance(e, dict) and e:
+                        # print(f'Column {col} has is a dict')
+                        for k, v in e.items():
+                            if v:
+                                df[f'{col}_{k}'] = v
+                        df.drop(columns=[col], inplace=True, errors='ignore')
+
+            max_len = -float("inf")
+            while len(df.columns) > max_len:
+                if len(df.columns) > max_len:
+                    max_len = len(df.columns)
+                go_deep(df)
+            self._ensure_fieldnames(df)
+            return df
+        else:
+            df = pd.DataFrame({"item_id": item_id})
+            return df
+
+    def transform_cars(self,responses : list):
+        if responses:
+            res = [self.transform_singe_car(response) for response in responses if response is not None]
+            df = pd.concat(res, ignore_index=True)
+            self._ensure_fieldnames(df)
+            return df
+
+    def save_cars(self,df : pd.DataFrame):
+        if not df.empty:
+            explicit_schema = {"godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_antallDorer" : ("STRING", "REPEATED")}
+            trouble_cols = ["godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_antallDorer"]
+            for col in trouble_cols:
+                df[col] = df[col].apply(lambda x: x[0] if isinstance(x,list) and len(x)==1 else x)
+
+            self.bq.to_bq(df=df, table_name="statens_vegvesen", dataset_name="staging",if_exists = "replace",explicit_schema=explicit_schema)
+            #self.bq.to_bq(df = df, table_name = "statens_vegvesen", dataset_name = "staging", if_exists="merge",merge_on = ["item_id"], explicit_schema=explicit_schema)
 
 
 if __name__ == '__main__':
 
     async def main():
-        geo  = geoApi()
+        geo  = DataApi()
         sql  = '''
         SELECT h.item_id, h.address
                     FROM `sibr-market.clean.homes` h
