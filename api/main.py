@@ -117,19 +117,29 @@ if __name__ == "__main__":
                     await api.close()
 
         elif args.task == "statens-vegvesen":
+            if not args.limit:
+                limit = 20000
+            else:
+                limit = args.limit
             query = """
-            SELECT item_id,reg_num 
-            FROM clean.cars c
-            WHERE NOT EXISTS (SELECT 1 
-                              FROM `sibr-market.staging.statens_vegvesen` s
-                              WHERE s.item_id = c.item_id
-                              )
-            AND reg_num IS NOT NULL
-            """
-            if args.limit:
-                query += f'\nLIMIT {args.limit}'
+                    SELECT item_id, reg_num
+                    FROM clean.cars c
+                    WHERE NOT EXISTS (SELECT 1
+                                      FROM `sibr-market.staging.statens_vegvesen` s
+                                      WHERE s.item_id = c.item_id)
+                      AND reg_num IS NOT NULL \
+                    """
+            if limit:
+                query += f'\nLIMIT {limit}'
             cars = api.bq.read_bq(query)
-
-
+            cars.set_index("item_id", inplace=True)
+            cars_input = cars["reg_num"].to_dict()
+            await api.get_items_with_ids(inputs=cars_input,
+                                               fetcher=api.get_car,
+                                               transformer=api.transform_cars,
+                                               saver=api.save_cars,
+                                               concurrent_requests=30,
+                                               save_interval=5000,
+                                               return_result=False)
 
     asyncio.run(main())

@@ -375,9 +375,11 @@ class DataApi(ApiBase):
 
                 elif col in ["first_registration","last_eu","next_eu"]:
                     if col in df.columns:
-                        df[col] = pd.to_numeric(df[col],errors='coerce')
-                else:
+                        df[col] = pd.to_datetime(df[col], format= "%Y-%m-%d", errors='coerce')
+
+                elif col in ["model"]:
                     df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) and len(x) == 1 else x)
+                    df[col] = df[col].astype(str)
             return df
 
     def save_cars(self,df : pd.DataFrame):
