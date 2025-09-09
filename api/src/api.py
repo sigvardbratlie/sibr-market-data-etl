@@ -21,6 +21,8 @@ class DataApi(ApiBase):
         secret = SecretsManager(project_id="sibr-market")
         self.sv_api_key = secret.get_secret("STATENS_VEGVESEN_API_KEY")
 
+    # ===== COMMON GEOCODING FUNCTIONS =====
+
     def _encode_address(self, address):
 
         if "/" in address:
@@ -36,6 +38,23 @@ class DataApi(ApiBase):
 
         return encoded_address
 
+    def save_func(self,df : pd.DataFrame,table_name : str = None, dataset_name : str = None):
+
+        if table_name is None:
+            table_name = "coordinates"
+        if dataset_name is None:
+            dataset_name = "staging"
+
+        self.bq.to_bq(df = df,
+                      table_name = table_name,
+                      dataset_name = dataset_name,
+                      if_exists = 'merge',
+                      merge_on = ['item_id'],
+                      explicit_schema = {"get_date": "TIMESTAMP",
+                                       "undernummer" : "FLOAT"}
+                      )
+
+    # ====== NOMIMATIM ======
     async def get_nomi(self,address):
         base_url = "https://nominatim.openstreetmap.org/"
         search_endpoint = "search"
@@ -122,6 +141,8 @@ class DataApi(ApiBase):
             df = pd.concat(dfs, ignore_index=True)
             self._ensure_fieldnames(df)
             return df
+
+    # ====== GEONORGE ===========
 
     async def get_geonorge(self,address):
         base_url = "https://ws.geonorge.no/adresser/v1/"
@@ -210,22 +231,8 @@ class DataApi(ApiBase):
             self._ensure_fieldnames(df)
             return df
 
-    def save_func(self,df : pd.DataFrame,table_name : str = None, dataset_name : str = None):
 
-        if table_name is None:
-            table_name = "coordinates"
-        if dataset_name is None:
-            dataset_name = "staging"
-
-        self.bq.to_bq(df = df,
-                      table_name = table_name,
-                      dataset_name = dataset_name,
-                      if_exists = 'merge',
-                      merge_on = ['item_id'],
-                      explicit_schema = {"get_date": "TIMESTAMP",
-                                       "undernummer" : "FLOAT"}
-                      )
-
+    # ===== STATENS VEGVESEN ========
     async def get_car(self,kjennemerke):
         url = f"https://www.vegvesen.no/ws/no/vegvesen/kjoretoy/felles/datautlevering/enkeltoppslag/kjoretoydata?kjennemerke={kjennemerke}"
         headers = {"SVV-Authorization": f"Apikey {self.sv_api_key}"}
@@ -249,52 +256,73 @@ class DataApi(ApiBase):
 
     def transform_singe_car(self, response):
         item_id, res = response
-        if res:
+        if res and isinstance(res, dict):
             result = res.get('kjoretoydataListe')
             if result and isinstance(result, list):
                 base = result[0]
-            new_base = {}
-            for k, v in base.items():
-                if isinstance(v, list) and v:
-                    if len(v) == 1:
-                        new_base[k] = v[0]
+                new_base = {}
+
+                #WHEEL DRIVE
+                aksel_gruppe = base.get("godkjenning",{}).get("tekniskGodkjenning",{}).get("tekniskeData",{}).get("akslinger",{}).get("akselGruppe",{})
+                for aksel in aksel_gruppe:
+                    info = aksel.get("akselListe").get("aksel",[])
+                    if info:
+                        info = info[0]
+                        where = info.get("plasseringAksel")
+                        drift = info.get("drivAksel")
+                        if where == "1":
+                            new_base["front_wheel_drive"] = drift
+                        elif where == "2":
+                            new_base["back_wheel_drive"] = drift
+
+                #FLATTEN
+                for k, v in base.items():
+                    if isinstance(v, list) and v:
+                        if len(v) == 1:
+                            new_base[k] = v[0]
+                        else:
+                            new_base[k] = v
                     else:
                         new_base[k] = v
-                else:
-                    new_base[k] = v
-            df = pd.json_normalize(new_base)
-            df["item_id"] = item_id
+                df = pd.json_normalize(new_base)
+                df["item_id"] = item_id
 
-            def go_deep(df):
-                for col in df.columns:
-                    e = df[col].iloc[0]
-                    if isinstance(e, list) and e:
-                        # print(f'Column {col} has is a list')
-                        if e:
-                            for element in e:
-                                if isinstance(element, dict) and element:
-                                    for k, v in element.items():
-                                        if v:
-                                            df[f'{col}_{k}'] = [v]
-                                    df.drop(columns=[col], inplace=True, errors='ignore')
-                                elif isinstance(element, list) and element:
-                                    print(f'Column {col} has is a list within a list')
-                    elif isinstance(e, dict) and e:
-                        # print(f'Column {col} has is a dict')
-                        for k, v in e.items():
-                            if v:
-                                df[f'{col}_{k}'] = v
-                        df.drop(columns=[col], inplace=True, errors='ignore')
+                def go_deep(df):
+                    for col in df.columns:
+                        e = df[col].iloc[0]
+                        if isinstance(e, list) and e:
+                            # print(f'Column {col} has is a list')
+                            if e:
+                                for element in e:
+                                    if isinstance(element, dict) and element:
+                                        for k, v in element.items():
+                                            if v:
+                                                try:
+                                                    df[f'{col}_{k}'] = v
+                                                except:
+                                                    df[f'{col}_{k}'] = [v]
+                                        df.drop(columns=[col], inplace=True, errors='ignore')
+                                    elif isinstance(element, list) and element:
+                                        print(f'Column {col} has is a list within a list')
+                        elif isinstance(e, dict) and e:
+                            # print(f'Column {col} has is a dict')
+                            for k, v in e.items():
+                                if v:
+                                    df[f'{col}_{k}'] = v
+                            df.drop(columns=[col], inplace=True, errors='ignore')
 
-            max_len = -float("inf")
-            while len(df.columns) > max_len:
-                if len(df.columns) > max_len:
-                    max_len = len(df.columns)
-                go_deep(df)
-            self._ensure_fieldnames(df)
-            return df
+                max_len = -float("inf")
+                while len(df.columns) > max_len:
+                    if len(df.columns) > max_len:
+                        max_len = len(df.columns)
+                    go_deep(df)
+                self._ensure_fieldnames(df)
+                return df
+            else:
+                df = pd.DataFrame({"item_id": [item_id]})
+                return df
         else:
-            df = pd.DataFrame({"item_id": item_id})
+            df = pd.DataFrame({"item_id": [item_id]})
             return df
 
     def transform_cars(self,responses : list):
@@ -302,24 +330,72 @@ class DataApi(ApiBase):
             res = [self.transform_singe_car(response) for response in responses if response is not None]
             df = pd.concat(res, ignore_index=True)
             self._ensure_fieldnames(df)
+            rename = {
+    # Direkte mappinger
+    "item_id": "item_id",
+    "kjoretoyId_kjennemerke": "reg_num",
+    "kjoretoyId_understellsnummer": "vin",
+    "forstegangsregistrering_registrertForstegangNorgeDato": "first_registration",
+    "godkjenning_tekniskGodkjenning_kjoretoyklassifisering_nasjonalGodkjenning_nasjonaltGodkjenningsAr": "model_year",
+    "godkjenning_tekniskGodkjenning_tekniskeData_generelt_merke_merke": "brand",
+    "godkjenning_tekniskGodkjenning_tekniskeData_generelt_handelsbetegnelse": "model",
+    "godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_karosseritype_kodeNavn": "body_type",
+    "godkjenning_tekniskGodkjenning_tekniskeData_vekter_egenvekt": "weight",
+    "godkjenning_tekniskGodkjenning_tekniskeData_persontall_sitteplasserTotalt": "seats",
+    "godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_antallDorer": "doors",
+    "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_girkassetype_kodeBeskrivelse": "gearbox",
+    "godkjenning_tekniskGodkjenning_tekniskeData_vekter_tillattTilhengervektMedBrems": "trailer_weight",
+    "godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_rFarge_kodeNavn": "color",
+    "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_motor_drivstoff_maksNettoEffekt": "power",
+    "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_motor_slagvolum": "engine_volume",
+    "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_motor_drivstoff_drivstoffKode_kodeBeskrivelse": "fuel",
+    "godkjenning_tekniskGodkjenning_tekniskeData_miljodata_miljoOgdrivstoffGruppe_forbrukOgUtslipp_wltpKjoretoyspesifikk_rekkeviddeKmBlandetkjoring": "range",
+    "front_wheel_drive" : "front_wheel_drive",
+    "back_wheel_drive": "back_wheel_drive",
+    "periodiskKjoretoyKontroll_kontrollfrist": "next_eu",
+    "periodiskKjoretoyKontroll_sistGodkjent": "last_eu",
+
+}
+            df.rename(columns=rename,inplace=True,errors='ignore')
+            cols_to_drop = df.columns.difference(rename.values())
+            df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
+            for col in df.columns:
+                if col in ["doors","seats"]:
+                    if col in df.columns:
+                        df[col] = df[col].apply(lambda x: int(x[0]) if isinstance(x, list) and len(x) == 1 else x)
+                        df[col] = df[col].apply(lambda x: 0 if x == [] else x)
+                        df[col] = df[col].fillna(0)
+                        df[col] = df[col].astype(int)
+
+                elif col in ["model_year","weight","engine_volumn","power","trailer_weight","range"]:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col],errors='coerce')
+                        df[col] = df[col].fillna(0)
+                        df[col] = df[col].astype(int)
+
+                elif col in ["first_registration","last_eu","next_eu"]:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col],errors='coerce')
+                else:
+                    df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) and len(x) == 1 else x)
             return df
 
     def save_cars(self,df : pd.DataFrame):
         if not df.empty:
-            explicit_schema = {"godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_antallDorer" : ("STRING", "REPEATED")}
-            trouble_cols = ["godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_antallDorer"]
-            for col in trouble_cols:
-                df[col] = df[col].apply(lambda x: x[0] if isinstance(x,list) and len(x)==1 else x)
-
-            self.bq.to_bq(df=df, table_name="statens_vegvesen", dataset_name="staging",if_exists = "replace",explicit_schema=explicit_schema)
-            #self.bq.to_bq(df = df, table_name = "statens_vegvesen", dataset_name = "staging", if_exists="merge",merge_on = ["item_id"], explicit_schema=explicit_schema)
+            #self.bq.to_bq(df=df, table_name="statens_vegvesen", dataset_name="staging",if_exists = "replace")
+            explicit_schema = {"doors" : "INTEGER"}
+            self.bq.to_bq(df = df, table_name = "statens_vegvesen",
+                          dataset_name = "staging",
+                          if_exists="merge",
+                          merge_on = ["item_id"],
+                          explicit_schema = explicit_schema)
 
 
 if __name__ == '__main__':
 
     async def main():
         geo  = DataApi()
-        sql  = '''
+        query  = '''
         SELECT h.item_id, h.address
                     FROM `sibr-market.clean.homes` h
                     UNION ALL -- Changed to UNION ALL to keep duplicates if desired, or UNION for unique.
@@ -328,7 +404,7 @@ if __name__ == '__main__':
                     FROM `sibr-market.clean.rentals` r
                '''
 
-        df = geo.bq.read_bq(sql,)
+        df = geo.bq.read_bq(query)
         inputs = df.set_index("item_id")["address"].to_dict()
 
         results = await geo.get_items_with_ids(inputs,

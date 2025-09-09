@@ -32,7 +32,7 @@ COMMIT_TAG = args.commit_sha
 print(f'Using image tag: {COMMIT_TAG}')
 
 SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{COMMIT_TAG}"
-GEOCODING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/geocoding:{COMMIT_TAG}"
+GEOCODING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{COMMIT_TAG}"
 MODELING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/modeling:{COMMIT_TAG}"
 
 # ---- PIPELINE COMPONENTS ----
@@ -69,7 +69,7 @@ def run_clean(): # Endret
 # ---- PIPELINE DEFINITION ----
 @dsl.pipeline(
     name='sibr-market-pipeline',
-    description='Pipeline for scraping, geocoding, and cleaning/predicting data for SIBR Market',
+    description='Pipeline for scraping, api, and cleaning/predicting data for SIBR Market',
     pipeline_root=BUCKET_URI
 )
 def create_pipeline(
@@ -85,7 +85,7 @@ def create_pipeline(
     cleaning_task.set_display_name('2. Cleaning Data')
     cleaning_task.set_caching_options(False)
 
-    # Step 3: Run geocoding
+    # Step 3: Run api
     #geocoding_task = run_geocoding()
     geocoding_task = run_geocoding().after(cleaning_task)
     geocoding_task.set_display_name('3. Geocoding Addresses')

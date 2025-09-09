@@ -39,7 +39,7 @@ def run_clean_predict(image: str): # Endret
 # ---- PIPELINE DEFINITION ----
 @dsl.pipeline(
     name='sibr-market-pipeline',
-    description='Pipeline for scraping, geocoding, and cleaning/predicting data for SIBR Market',
+    description='Pipeline for scraping, api, and cleaning/predicting data for SIBR Market',
     pipeline_root=BUCKET_URI
 )
 def create_pipeline(
@@ -54,7 +54,7 @@ def create_pipeline(
     scraping_task.set_display_name('1. Scraping Data')
     scraping_task.set_caching_options(False) # Bra at du har skrudd av caching!
 
-    # Step 2: Run geocoding
+    # Step 2: Run api
     geocoding_task = run_geocoding(image=geocoding_image).after(scraping_task)
     geocoding_task.set_display_name('2. Geocoding Addresses')
     geocoding_task.set_caching_options(False)
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
 
     SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:latest"
-    GEOCODING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/geocoding:latest"
+    GEOCODING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:latest"
     MLDATA_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/mldata:latest"
 
     PIPELINE_JSON = 'sibr_market_pipeline.json'

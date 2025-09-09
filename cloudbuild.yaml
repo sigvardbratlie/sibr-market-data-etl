@@ -27,12 +27,12 @@ steps:
     - './scraping'
 
 - name: 'gcr.io/cloud-builders/docker'
-  id: 'build-geocoding'
+  id: 'build-api'
   args:
     - 'build'
     - '-t'
-    - 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/geocoding:${COMMIT_SHA}'
-    - './geocoding'
+    - 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/api:${COMMIT_SHA}'
+    - './api'
 
 - name: 'gcr.io/cloud-builders/docker'
   id: 'build-modeling'
@@ -57,9 +57,9 @@ steps:
   args: ['push', 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/scraping:${COMMIT_SHA}']
 
 - name: 'gcr.io/cloud-builders/docker'
-  id: 'push-geocoding'
-  waitFor: ['build-geocoding']
-  args: ['push', 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/geocoding:${COMMIT_SHA}']
+  id: 'push-api'
+  waitFor: ['build-api']
+  args: ['push', 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/api:${COMMIT_SHA}']
 
 - name: 'gcr.io/cloud-builders/docker'
   id: 'push-modeling'
@@ -74,7 +74,7 @@ steps:
 # ---- STEG 3: Kompiler og opprett/oppdater pipeline-schedule ----
 - name: 'python:3.11'
   id: 'deploy-pipeline'
-  waitFor: ['push-scraping', 'push-modeling',"push-geocoding"]
+  waitFor: ['push-scraping', 'push-modeling',"push-api"]
   entrypoint: 'bash'
   args:
   - '-c'
