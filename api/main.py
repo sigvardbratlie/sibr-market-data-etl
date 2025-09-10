@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
         elif args.task == "statens-vegvesen":
             if not args.limit:
-                limit = 20000
+                limit = 100000
             else:
                 limit = args.limit
             query = """
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                                                transformer=api.transform_cars,
                                                saver=api.save_cars,
                                                concurrent_requests=30,
-                                               save_interval=5000,
+                                               save_interval=7500,
                                                return_result=False)
 
     asyncio.run(main())
