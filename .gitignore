@@ -101,5 +101,6 @@ catboost_info/
 examples/
 
 
+*.DS_Store
 
 
