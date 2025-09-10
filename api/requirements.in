@@ -31,6 +31,6 @@ pandas-gbq
 pillow
 requests
 shapely
-sibr-module
+sibr-module==0.2.2
 sibr-api==0.3.2
 pathlib

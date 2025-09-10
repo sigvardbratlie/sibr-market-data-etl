@@ -246,7 +246,7 @@ ipywidgets==8.1.7
     # via bigframes
 jedi==0.19.2
     # via ipython
-joblib==1.5.1
+joblib==1.5.2
     # via sibr-module
 jupyterlab-widgets==3.0.15
     # via ipywidgets
@@ -387,13 +387,9 @@ pyparsing==3.2.3
 pyproj==3.7.2
     # via geopandas
 pytest==8.4.1
-    # via
-    #   pytest-asyncio
-    #   sibr-api
+    # via pytest-asyncio
 pytest-asyncio==1.1.0
-    # via
-    #   aresponses
-    #   sibr-api
+    # via aresponses
 python-dateutil==2.9.0.post0
     # via
     #   bigframes
@@ -430,9 +426,9 @@ shapely==2.1.1
     #   -r requirements.in
     #   bigframes
     #   geopandas
-sibr-api==0.1.2
+sibr-api==0.3.2
     # via -r requirements.in
-sibr-module==0.1.9
+sibr-module==0.2.2
     # via -r requirements.in
 six==1.17.0
     # via python-dateutil

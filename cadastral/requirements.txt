@@ -430,7 +430,7 @@ shapely==2.1.1
     # via
     #   bigframes
     #   geopandas
-sibr-api==0.2.7
+sibr-api==0.3.2
     # via -r requirements.in
 sibr-module==0.2.2
     # via -r requirements.in

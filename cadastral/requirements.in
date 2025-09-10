@@ -8,8 +8,8 @@ pandas_gbq
 requests
 zeep
 bigframes
-sibr-module
-sibr-api
+sibr-module==0.2.2
+sibr-api==0.3.2
 kartverkets-api
 python-dotenv
 aiohttp
