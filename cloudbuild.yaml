@@ -68,13 +68,13 @@ steps:
 
 - name: 'gcr.io/cloud-builders/docker'
   id: 'push-cadastral'
-  waitFor: ['build-modeling']
+  waitFor: ['build-cadastral']
   args: ['push', 'europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/cadastral:${COMMIT_SHA}']
 
 # ---- STEG 3: Kompiler og opprett/oppdater pipeline-schedule ----
 - name: 'python:3.11'
   id: 'deploy-pipeline'
-  waitFor: ['push-scraping', 'push-modeling',"push-api"]
+  waitFor: ['push-scraping', 'push-modeling',"push-api","push-cadastral"]
   entrypoint: 'bash'
   args:
   - '-c'
