@@ -4,7 +4,7 @@ from datetime import datetime
 import argparse
 from dotenv import load_dotenv
 from pathlib import Path
-from src.api import DataApi
+from src.api import DataApi,RateLimitError
 from sibr_module import Logger
 
 load_dotenv()
@@ -82,6 +82,8 @@ if __name__ == "__main__":
                                       saver = api.save_func,
                                         save_interval=5000,
                                         concurrent_requests=30,)
+                except RateLimitError as e:
+                    logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
                 finally:
                     await api.close()
                 logger.info(f'====== STARTING NOMINATIM GEOCODING ======\n \tfetching those items that Geonorge missed!')
@@ -112,6 +114,8 @@ if __name__ == "__main__":
                                       saver = api.save_func,
                                         save_interval=5000,
                                         concurrent_requests=5,)
+                except RateLimitError as e:
+                    logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
                 finally:
                     logger.info(f'Geocoding process completed. Time used: {datetime.now() - starttime}.')
                     await api.close()
@@ -134,12 +138,17 @@ if __name__ == "__main__":
             cars = api.bq.read_bq(query)
             cars.set_index("item_id", inplace=True)
             cars_input = cars["reg_num"].to_dict()
-            await api.get_items_with_ids(inputs=cars_input,
-                                               fetcher=api.get_car,
-                                               transformer=api.transform_cars,
-                                               saver=api.save_cars,
-                                               concurrent_requests=30,
-                                               save_interval=7500,
-                                               return_result=False)
+            try:
+                await api.get_items_with_ids(inputs=cars_input,
+                                                   fetcher=api.get_car,
+                                                   transformer=api.transform_cars,
+                                                   saver=api.save_cars,
+                                                   concurrent_requests=30,
+                                                   save_interval=7500,
+                                                   return_result=False)
+            except RateLimitError as e:
+                logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
+            finally:
+                await api.close()
 
     asyncio.run(main())
