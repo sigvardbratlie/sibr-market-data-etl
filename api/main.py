@@ -32,18 +32,17 @@ parser.add_argument('--log-level', type=str, default='INFO', help='Logging level
 parser.add_argument('--cloud-logging', action='store_true', default=False, help='Enable cloud logging (default: False)')
 #parser.add_argument('--api', type=str, default='nominatim', help='Geocoding API to use (default: nominatim)')
 parser.add_argument("--geocoder", choices=["geonorge", "nominatim"], default="geonorge")
-parser.add_argument("-t","--task", choices=["geocode","statens-vegvesen"],required=True, help="Task to run")
+parser.add_argument("-t","--task", choices=["geocode","statens-vegvesen","all"],required=True, help="Task to run")
 
 if __name__ == "__main__":
     async def main():
-
         args = parser.parse_args()
         logger = Logger(log_name='api',enable_cloud_logging=args.cloud_logging)
         starttime = datetime.now()
 
         api = DataApi(logger=logger)
 
-        if args.task == "geocode":
+        if args.task in ["geocode","all"]:
             if args.address:
                 if args.geocoder == "geonorge":
                     if not isinstance(args.address, list):
@@ -120,9 +119,9 @@ if __name__ == "__main__":
                     logger.info(f'Geocoding process completed. Time used: {datetime.now() - starttime}.')
                     await api.close()
 
-        elif args.task == "statens-vegvesen":
+        if args.task in ["statens-vegvesen","all"]:
             if not args.limit:
-                limit = 100000
+                limit = None
             else:
                 limit = args.limit
             query = """
