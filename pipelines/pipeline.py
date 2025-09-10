@@ -32,8 +32,9 @@ COMMIT_TAG = args.commit_sha
 print(f'Using image tag: {COMMIT_TAG}')
 
 SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{COMMIT_TAG}"
-GEOCODING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{COMMIT_TAG}"
+API_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{COMMIT_TAG}"
 MODELING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/modeling:{COMMIT_TAG}"
+CADASTRAL_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/cadastral:{COMMIT_TAG}"
 
 # ---- PIPELINE COMPONENTS ----
 @dsl.container_component
@@ -44,9 +45,9 @@ def run_scraping():
     )
 
 @dsl.container_component
-def run_geocoding(): # Endret
+def run_api(): # Endret
     return dsl.ContainerSpec(
-        image=GEOCODING_IMAGE_URI,
+        image=API_IMAGE_URI,
         command=['python', 'main.py'],
     )
 
@@ -64,6 +65,13 @@ def run_clean(): # Endret
         image=MODELING_IMAGE_URI,
         command=['python', 'main.py'],
         args=['--run-clean']
+    )
+
+@dsl.container_component
+def run_cadastral(): # Endret
+    return dsl.ContainerSpec(
+        image=CADASTRAL_IMAGE_URI,
+        command=['python', 'main.py'],
     )
 
 # ---- PIPELINE DEFINITION ----
@@ -88,7 +96,7 @@ def create_pipeline(
     # Step 3: Run api
     #geocoding_task = run_geocoding()
     geocoding_task = run_geocoding().after(cleaning_task)
-    geocoding_task.set_display_name('3. Geocoding Addresses')
+    geocoding_task.set_display_name('3. API step')
     geocoding_task.set_caching_options(False)
 
     # Step 4: Run cadastral
