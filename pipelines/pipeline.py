@@ -49,6 +49,7 @@ def run_api(): # Endret
     return dsl.ContainerSpec(
         image=API_IMAGE_URI,
         command=['python', 'main.py'],
+        args = ["--task", "all"]
     )
 
 @dsl.container_component
@@ -72,6 +73,7 @@ def run_cadastral(): # Endret
     return dsl.ContainerSpec(
         image=CADASTRAL_IMAGE_URI,
         command=['python', 'main.py'],
+        args = ["-up","-s"]
     )
 
 # ---- PIPELINE DEFINITION ----
@@ -95,12 +97,12 @@ def create_pipeline(
 
     # Step 3: Run api
     #geocoding_task = run_geocoding()
-    geocoding_task = run_geocoding().after(cleaning_task)
-    geocoding_task.set_display_name('3. API step')
-    geocoding_task.set_caching_options(False)
+    api_task = run_api().after(cleaning_task)
+    api_task.set_display_name('3. API step')
+    api_task.set_caching_options(False)
 
     # Step 4: Run cadastral
-    cadastral_task = run_geocoding().after(cleaning_task)
+    cadastral_task = run_cadastral().after(api_task)
     cadastral_task.set_display_name('4. Get cadastral data')
     cadastral_task.set_caching_options(False)
 

@@ -32,5 +32,5 @@ pillow
 requests
 shapely
 sibr-module
-sibr-api
+sibr-api==0.3.2
 pathlib
