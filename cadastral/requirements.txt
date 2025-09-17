@@ -28,9 +28,7 @@ attrs==25.3.0
     #   aiohttp
     #   zeep
 bigframes==2.18.0
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 cachetools==5.5.2
     # via google-auth
 certifi==2025.8.3
@@ -55,13 +53,10 @@ db-dtypes==1.4.3
     #   bigframes
     #   google-cloud-bigquery
     #   pandas-gbq
-    #   sibr-module
 decorator==5.2.1
     # via
     #   gcsfs
     #   ipython
-et-xmlfile==2.0.0
-    # via openpyxl
 executing==2.2.1
     # via stack-data
 fonttools==4.59.2
@@ -75,9 +70,7 @@ fsspec==2025.9.0
     #   bigframes
     #   gcsfs
 gcsfs==2025.9.0
-    # via
-    #   bigframes
-    #   sibr-module
+    # via bigframes
 geopandas==1.1.1
     # via bigframes
 google-api-core[grpc]==2.25.1
@@ -88,7 +81,6 @@ google-api-core[grpc]==2.25.1
     #   google-cloud-bigquery-storage
     #   google-cloud-core
     #   google-cloud-functions
-    #   google-cloud-iam
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
@@ -107,7 +99,6 @@ google-auth==2.40.3
     #   google-cloud-bigquery-storage
     #   google-cloud-core
     #   google-cloud-functions
-    #   google-cloud-iam
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
@@ -120,67 +111,43 @@ google-auth-oauthlib==1.2.2
     #   gcsfs
     #   pandas-gbq
     #   pydata-google-auth
-    #   sibr-module
-google-cloud==0.34.0
-    # via sibr-module
 google-cloud-appengine-logging==1.6.2
-    # via
-    #   google-cloud-logging
-    #   sibr-module
+    # via google-cloud-logging
 google-cloud-audit-log==0.3.2
-    # via
-    #   google-cloud-logging
-    #   sibr-module
+    # via google-cloud-logging
 google-cloud-bigquery[bqstorage,pandas]==3.36.0
     # via
     #   -r requirements.in
     #   bigframes
     #   pandas-gbq
-    #   sibr-module
 google-cloud-bigquery-connection==1.18.3
-    # via
-    #   bigframes
-    #   sibr-module
+    # via bigframes
 google-cloud-bigquery-storage==2.33.0
     # via
     #   bigframes
     #   google-cloud-bigquery
-    #   sibr-module
 google-cloud-core==2.4.3
     # via
     #   google-cloud-bigquery
     #   google-cloud-logging
     #   google-cloud-storage
-    #   sibr-module
 google-cloud-functions==1.20.4
-    # via
-    #   bigframes
-    #   sibr-module
-google-cloud-iam==2.19.1
-    # via sibr-module
+    # via bigframes
 google-cloud-logging==3.12.1
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 google-cloud-resource-manager==1.14.2
-    # via
-    #   bigframes
-    #   sibr-module
+    # via bigframes
 google-cloud-secret-manager==2.24.0
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 google-cloud-storage==3.3.1
     # via
     #   -r requirements.in
     #   bigframes
     #   gcsfs
-    #   sibr-module
 google-crc32c==1.7.1
     # via
     #   google-cloud-storage
     #   google-resumable-media
-    #   sibr-module
 google-resumable-media==2.7.2
     # via
     #   google-cloud-bigquery
@@ -196,7 +163,6 @@ grpc-google-iam-v1==0.14.2
     #   bigframes
     #   google-cloud-bigquery-connection
     #   google-cloud-functions
-    #   google-cloud-iam
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
@@ -207,7 +173,6 @@ grpcio==1.74.0
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-    #   sibr-module
 grpcio-status==1.74.0
     # via google-api-core
 h11==0.16.0
@@ -238,11 +203,9 @@ isodate==0.7.2
     # via zeep
 jedi==0.19.2
     # via ipython
-joblib==1.5.2
-    # via sibr-module
 jupyterlab-widgets==3.0.15
     # via ipywidgets
-kartverkets-api==0.1.4
+kartverkets-api==0.1.6
     # via -r requirements.in
 kiwisolver==1.4.9
     # via matplotlib
@@ -273,11 +236,8 @@ numpy==2.3.2
     #   pandas-gbq
     #   pyogrio
     #   shapely
-    #   sibr-module
 oauthlib==3.3.1
     # via requests-oauthlib
-openpyxl==3.1.5
-    # via sibr-module
 opentelemetry-api==1.36.0
     # via google-cloud-logging
 packaging==25.0
@@ -305,7 +265,6 @@ pandas-gbq==0.29.2
     #   -r requirements.in
     #   bigframes
     #   google-cloud-bigquery
-    #   sibr-module
 parso==0.8.5
     # via jedi
 pexpect==4.9.0
@@ -329,7 +288,6 @@ proto-plus==1.26.1
     #   google-cloud-bigquery-connection
     #   google-cloud-bigquery-storage
     #   google-cloud-functions
-    #   google-cloud-iam
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
@@ -341,7 +299,6 @@ protobuf==6.32.0
     #   google-cloud-bigquery-connection
     #   google-cloud-bigquery-storage
     #   google-cloud-functions
-    #   google-cloud-iam
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-secret-manager
@@ -359,7 +316,6 @@ pyarrow==21.0.0
     #   db-dtypes
     #   google-cloud-bigquery
     #   pandas-gbq
-    #   sibr-module
 pyasn1==0.6.1
     # via
     #   pyasn1-modules
@@ -396,13 +352,12 @@ python-dotenv==1.1.1
     # via
     #   -r requirements.in
     #   sibr-api
+    #   sibr-module
 pytz==2025.2
     # via
     #   bigframes
     #   pandas
     #   zeep
-pyyaml==6.0.2
-    # via sibr-module
 requests==2.32.5
     # via
     #   -r requirements.in
@@ -432,7 +387,7 @@ shapely==2.1.1
     #   geopandas
 sibr-api==0.3.2
     # via -r requirements.in
-sibr-module==0.2.2
+sibr-module==0.2.10
     # via -r requirements.in
 six==1.17.0
     # via python-dateutil

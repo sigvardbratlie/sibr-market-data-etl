@@ -1,523 +1,59 @@
-import os
-from kartverkets_api import kartverketsAPI
-from sibr_module import BigQuery,Logger,SecretsManager
+from kartverkets_api.kartverket import kartverketsAPI
+from sibr_module import BigQuery,LoggerV2
 import argparse
 import asyncio
 import pandas as pd
+import os
+from pathlib import Path
 from dotenv import load_dotenv
+from datetime import datetime
+
 load_dotenv()
+
+cred_filename = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_FILENAME")
+if cred_filename:
+    print(f'RUNNING LOCAL. ADAPTING LOADING PROCESS')
+    project_root = Path(__file__).parent
+    os.chdir(project_root)
+    dotenv_path = project_root.parent / '.env'
+    load_dotenv(dotenv_path=dotenv_path)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(project_root.parent / cred_filename)
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 
 group.add_argument("--by-properties", nargs="*", help="gets information about a specific property based on kommunenr, gnr, bnr, festnr & seksjonsnr")
 group.add_argument("--by-period", action="store_true", help="gets information about all properties within a given period")
-group.add_argument("-up","--update-project", action="store_true", help="gets information about all properties within a given period")
+group.add_argument("-up","--update-project", action="store_true", help="Updates status on all properies in the DB")
+group.add_argument("-a","--address",type = str, help = "")
 
 parser.add_argument("--start-date", help="The start date for the period (required with --get_by_period)")
 parser.add_argument("--end-date", help="The end date for the period (required with --get_by_period)")
-parser.add_argument("--transfer-type",default="active",help="Transfer type; Choose between active or historical transfers")
+parser.add_argument("-t-type","--transfer-type",choices=["active","historical"], help="Transfer type; Choose between active or historical transfers")
 parser.add_argument("-s","--save", action="store_true", help="A boolean for storing data to Big Query")
-parser.add_argument("-ost","--ownership-type", type = str, choices=["eier","andel"])
+parser.add_argument("-o-type","--ownership-type", type = str, choices=["eier","andel"])
+parser.add_argument("-s-num","--section-num", type = int, help = "Section number for the property. Used when asking for single address")
+parser.add_argument("-l","--limit", type = int, help = "Limit when reading in data")
 
+type_group  = parser.add_mutually_exclusive_group(required=True)
+type_group.add_argument("-f","--fill", action="store_true", help="Fills information for missing rows")
+type_group.add_argument("-ow","--overwrite", action="store_true", help="Fills information for missing rows")
 
-test_properties = properties = [
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 1,
-        "bruksnummer": 2,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 1,
-        "bruksnummer": 5,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 1,
-        "bruksnummer": 9,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 1,
-        "bruksnummer": 12,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 120,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 120,
-        "festenummer": 1,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 120,
-        "festenummer": 2,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 120,
-        "festenummer": 3,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 125,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 125,
-        "festenummer": 0,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 125,
-        "festenummer": 0,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 125,
-        "festenummer": 0,
-        "seksjonsnummer": 3
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 125,
-        "festenummer": 0,
-        "seksjonsnummer": 4
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 150,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 151,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 152,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 153,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 3
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 4
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 5
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 6
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 7
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 253,
-        "festenummer": 0,
-        "seksjonsnummer": 8
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 410,
-        "festenummer": 0,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 410,
-        "festenummer": 0,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 410,
-        "festenummer": 0,
-        "seksjonsnummer": 3
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 410,
-        "festenummer": 0,
-        "seksjonsnummer": 4
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 861,
-        "festenummer": 0,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 2,
-        "bruksnummer": 861,
-        "festenummer": 0,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 318,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 318,
-        "festenummer": 1,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 318,
-        "festenummer": 1,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 318,
-        "festenummer": 1,
-        "seksjonsnummer": 3
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 485,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 485,
-        "festenummer": 0,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 4,
-        "bruksnummer": 485,
-        "festenummer": 0,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 6,
-        "bruksnummer": 189,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 6,
-        "bruksnummer": 190,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 6,
-        "bruksnummer": 191,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 6,
-        "bruksnummer": 192,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 9,
-        "bruksnummer": 88,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 9,
-        "bruksnummer": 88,
-        "festenummer": 1,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 9,
-        "bruksnummer": 88,
-        "festenummer": 2,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 9,
-        "bruksnummer": 88,
-        "festenummer": 3,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 10,
-        "bruksnummer": 53,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 28,
-        "bruksnummer": 324,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 28,
-        "bruksnummer": 888,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 29,
-        "bruksnummer": 14,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 29,
-        "bruksnummer": 87,
-        "festenummer": 0,
-        "seksjonsnummer": 1
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 29,
-        "bruksnummer": 87,
-        "festenummer": 0,
-        "seksjonsnummer": 2
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 29,
-        "bruksnummer": 87,
-        "festenummer": 0,
-        "seksjonsnummer": 3
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 30,
-        "bruksnummer": 1,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 30,
-        "bruksnummer": 3,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 30,
-        "bruksnummer": 4,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 30,
-        "bruksnummer": 5,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    },
-    {
-        "kommunenummer": "3212",
-        "gaardsnummer": 30,
-        "bruksnummer": 6,
-        "festenummer": 0,
-        "seksjonsnummer": 0
-    }
-]
-
-def transform_cadastrals(dataframe : pd.DataFrame,request_cols) -> pd.DataFrame:
-    df = dataframe.copy()
-    rename = {"municipality_num": "kommunenummer",
-              "cadastral_num": "gaardsnummer",
-              "unit_num": "bruksnummer",
-              "leasehold_num": "festenummer",
-              "section_num": "seksjonsnummer"}
-    df.rename(columns=rename, inplace=True)
-    if "item_id" in df.columns:
-        df.set_index("item_id",inplace=True)
-    else:
-        print(f'WARNING: item_id not found in df')
-    df.dropna(subset=["gaardsnummer", "bruksnummer","price"], inplace=True)
-    for col in ["festenummer","seksjonsnummer"]:
-        df[col].fillna(0, inplace=True)
-    df = df.loc[df["gaardsnummer"] != 0, :]
-    #df["last_updated"] = pd.to_datetime(df["last_updated"], utc=True)
-    df["scrape_date"] = pd.to_datetime(df["scrape_date"])
-    #df.loc[:,"scrape_date"] = pd.to_datetime(df["scrape_date"])
-
-    for col in request_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-            #df.loc[:, col] = pd.to_numeric(df[col], errors="coerce")
-        else:
-            print(f'Column {col} not found in df')
-    df.dropna(subset=request_cols, inplace=True)
-    for col in request_cols:
-        if col in df.columns:
-            #df.loc[:,col] = df[col].astype(int)
-            df[col] = df[col].astype(int)
-            if col == "kommunenummer":
-                #df.loc[:, col] = df[col].apply(lambda x: str(x).zfill(4))
-                df[col] = df[col].apply(lambda x: str(x).zfill(4))
-        else:
-            print(f'Column {col} not found in df')
-    df = df.loc[df["kommunenummer"] != "0000", :]
-    df.sort_values(by=["scrape_date"], inplace=True, ascending=False)
-    df.drop_duplicates(subset=request_cols,keep = "first",inplace=True)
-    return df
-def transform_coop(dataframe : pd.DataFrame,request_cols) -> pd.DataFrame:
-    df = dataframe.copy()
-    rename = {"coop_org_num": "borettslagnummer",
-              "coop_unit_num": "andelsnummer",
-              }
-    df.rename(columns=rename, inplace=True)
-    if "item_id" in df.columns:
-        df.set_index("item_id",inplace=True)
-    else:
-        print(f'WARNING: item_id not found in df')
-    df.dropna(subset=["borettslagnummer","andelsnummer","price"], inplace=True)
-    df["andelsnummer"].fillna(0, inplace=True)
-    df["scrape_date"] = pd.to_datetime(df["scrape_date"])
-
-    for col in request_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        else:
-            print(f'Column {col} not found in df')
-    df.dropna(subset=request_cols, inplace=True)
-    for col in request_cols:
-        if col in df.columns:
-            df[col] = df[col].astype(int)
-        else:
-            print(f'Column {col} not found in df')
-    df.sort_values(by=["scrape_date"], inplace=True, ascending=False)
-    df.drop_duplicates(subset=request_cols,keep = "first",inplace=True)
-    return df
+logger = LoggerV2("kartverketMain")
 
 
 async def main():
-    logger = Logger("kartverketMain")
-    secret = SecretsManager(logger = logger,project_id="sibr-market")
-    api_key = secret.get_secret("GRUNNBOK_API_KEY")
-    if api_key:
-        os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
-        os.environ["GRUNNBOK_PASSWORD"] = api_key
-    else:
-        raise PermissionError("No API key found")
+    #logger = LoggerV2("kartverketMain")
     api = kartverketsAPI(logger=logger)
     bq = BigQuery(logger=logger,project_id="sibr-market")
 
+    starttime = datetime.now()
     args = parser.parse_args()
 
     try:
         if args.by_properties:
             try:
-                df = await api.get_by_property(args.get_by_properties, transfer_type=args.transfer_type)
+                df = await api.get_by_property(args.by_properties, transfer_type=args.transfer_type)
                 if args.save_bq:
                     trouble_columns = [
                         #  "oppdateringsdato_timestamp",
@@ -537,94 +73,145 @@ async def main():
                 api.get_by_period(args.start_date, args.end_date)
 
         elif args.update_project:
-            ownership_type_arg = args.ownership_type
-            if not ownership_type_arg:
-                for ownership_type in ["eier", "andel"]:
+            BATCH_SIZE = 50000
+            transfer_type_arg = [args.transfer_type] if args.transfer_type else ["active", "historical"]
+            ownership_type_arg = [args.ownership_type] if args.ownership_type else ["eier", "andel",]
+            if args.overwrite:
+                transfer_type_arg = ["active"]
+            #max_date = bq.read_bq("SELECT MAX (scrape_date) FROM raw.homes")
+            #max_date = max_date.iloc[0,0]
+            max_date = None
+            logger.info(f'======== RUNNING PROGRAM OF UPDATING PROJECT ==========\n'
+                        f'OWNERSHIP TYPES: {ownership_type_arg}\nTRANSFER TYPES: {transfer_type_arg}'
+                        f'\nFILL: {args.fill}\nOVERWRITE: {args.overwrite}\nBATCH SIZE: {BATCH_SIZE}\nLIMIT {args.limit}')
+            for transfer_type in transfer_type_arg:
+                for ownership_type in ownership_type_arg:
                     if ownership_type == "eier":
-                        query = """
-                            SELECT
-                              item_id,
-                              last_updated,
-                              scrape_date,
-                              price,
-                              municipality_num,
-                              cadastral_num,
-                              unit_num,
-                              leasehold_num,
-                              section_num
-                            FROM `sibr-market.clean.homes` h
-                              WHERE NOT EXISTS (SELECT 1 FROM staging.cadastrals c WHERE c.item_id = h.item_id) 
-                              AND cadastral_num IS NOT NULL
-                              AND unit_num IS NOT NULL
-                              AND DATE(scrape_date) !=  (SELECT MAX(scrape_date) FROM raw.homes)
-                              AND LOWER(ownership_type) = 'eier' OR LOWER(ownership_type) = 'eier '
-                            """
+                        query = f"""
+                                SELECT item_id,
+                                       municipality_num,
+                                       cadastral_num,
+                                       unit_num,
+                                       leasehold_num,
+                                       section_num
+                                FROM `sibr-market.clean.homes` h
+                                WHERE cadastral_num IS NOT NULL
+                                  AND unit_num IS NOT NULL
+                                  --AND DATE (scrape_date) != {max_date}
+                                  AND LOWER (ownership_type) = 'eier'
+                                """
                         request_cols = ["kommunenummer", "gaardsnummer", "bruksnummer", "festenummer", "seksjonsnummer"]
                     elif ownership_type == "andel":
-                        request_cols = ["borettslagnummer", "andelsnummer"]
-                        query = """
-                                SELECT item_id, 
-                                       last_updated, 
-                                       scrape_date, 
-                                       price, 
-                                       coop_unit_num, 
+                        query = f"""
+                                SELECT item_id,
+                                       coop_unit_num,
                                        coop_org_num
                                 FROM `sibr-market.clean.homes` h
-                                WHERE NOT EXISTS (SELECT 1 FROM staging.cadastrals c WHERE c.item_id = h.item_id)
-                                  AND cadastral_num IS NOT NULL
-                                  AND unit_num IS NOT NULL
-                                  AND DATE (scrape_date) != (SELECT MAX (scrape_date) FROM raw.homes)
-                                  AND LOWER (ownership_type) = 'andel' 
+                                WHERE coop_unit_num IS NOT NULL
+                                  AND coop_org_num IS NOT NULL
+                                  --AND DATE (scrape_date) != {max_date}
+                                  AND LOWER (ownership_type) = 'andel'
                                 """
+                        request_cols = ["borettslagnummer", "andelsnummer"]
                     else:
                         raise TypeError(f'Expected "eier" or "andel" but got {ownership_type}')
+
+                    if args.fill:
+                        query += f"""\nAND NOT EXISTS (SELECT 1 
+                                                  FROM staging.cadastrals c 
+                                                  WHERE c.item_id = h.item_id AND c.active = {transfer_type == 'active'})"""
+                    elif args.overwrite:
+                        query += f'\nAND DATE(scrape_date) > DATE_SUB(CURRENT_DATE(), INTERVAL 300 DAY)'
+                    if args.limit:
+                        query += f"\nLIMIT {args.limit}"
+                    logger.info(f'Reading data from BQ with transfer type {transfer_type}, ownership type {ownership_type}, fill {args.fill} and overwrite {args.overwrite}')
+                    #print(query)
                     db = bq.read_bq(query)
 
                     #TRANSFORM DATA FOR KARTVERKET
-
-                    db = transform_cadastrals(db, request_cols=request_cols) if ownership_type == "eier" else transform_coop(db,request_cols=request_cols)
-                    # if ownership_type == "eier":
-                    #     db = transform_cadastrals(db,request_cols=request_cols)
-                    # elif ownership_type == "andel":
-                    #     db = transform_coop(db,request_cols=request_cols)
+                    db = api.transform_cadastrals(db, request_cols=request_cols) if ownership_type == "eier" else api.transform_coop(db,request_cols=request_cols)
                     properties = db[request_cols].to_dict(orient='records')
                     logger.info(f'Total batch size is {len(properties)}')
-                    for batch in range(0,len(properties),20000):
-                        logger.info(f'Working batch with {len(properties[batch:batch+20000])} of {len(properties)} properties ({len(properties[batch:batch+20000]) / len(properties) * 100:.2f}% of total properties)')
+                    #logger.warning(f'EXAMPLE: {properties[:5]}')
+                    for batch in range(0,len(properties),BATCH_SIZE):
+                        logger.info(f'Working batch with {len(properties[batch:batch+BATCH_SIZE])} of {len(properties)} properties ({len(properties[batch:batch+BATCH_SIZE]) / len(properties) * 100:.2f}% of total properties)')
                         try:
-                            df = await api.get_by_property(properties[batch:batch+20000], transfer_type=args.transfer_type, ownership_type=ownership_type)
+                            df = await api.get_by_property(properties[batch:batch+BATCH_SIZE], transfer_type=transfer_type, ownership_type=ownership_type)
                         except Exception as e:
                             logger.error(f'Error getting properties: {e}')
                             raise
 
-                        logger.info(f'➡️  Input from batch kartverket API: {len(df)}')
-                        for col in request_cols:
-                            if df[col].dtype != db[col].dtype:
-                                logger.warning(f'Column {col} has different data types in db and df. `df` has dtype {df[col].dtype} and `db` has dtype {db[col].dtype}. Forcing both to int')
-                                df[col] = df[col].astype(int)
-                                db[col] = db[col].astype(int)
-                        m = pd.merge(df, db.reset_index(), on=request_cols, how="left")
-                        view = m.loc[(m["registreringstidspunkt"] >= "2024-07-01"), ["item_id", "scrape_date",
-                                                                                     "registreringstidspunkt",
-                                                                                     "omsetning_vederlag_beloepsverdi", "price"]]
-                        view = view[view["omsetning_vederlag_beloepsverdi"] > 0]
-                        view["dt_diff"] = (view["registreringstidspunkt"] - view["scrape_date"]).dt.days
-                        view["price_diff"] = view["omsetning_vederlag_beloepsverdi"] - view["price"]
-                        minmax = 3000000
-                        view = view[(view['price_diff'] < minmax) & (view['price_diff'] > -minmax)]
-                        view = view[(view["dt_diff"]>0) & (view["dt_diff"]<300)]
-                        view.rename(columns={"omsetning_vederlag_beloepsverdi": "sale_price"}, inplace=True)
-                        logger.info(f'⬅️    Output from batch kartverket API: {len(view)}')
+                        logger.info(f'➡️ Input from batch kartverket API to data cleaning: {len(df)} with transfer type {transfer_type} and ownership type {ownership_type}')
+                        # for col in request_cols:
+                        #     if df[col].dtype != db[col].dtype:
+                        #         logger.warning(f'Column {col} has different data types in db and df. `df` has dtype {df[col].dtype} and `db` has dtype {db[col].dtype}. Forcing both to int')
+                        #         df[col] = df[col].astype(int) #FRAME
+                        #         db[col] = db[col].astype(int) #BASE
+                        # m = pd.merge(df, db.reset_index(), on=request_cols, how="left")
+                        # view = m.drop(columns=['omsetning_oppdateringsdato_timestamp',
+                        #                        'omsetning_dokumentavgift_beloepstekst',
+                        #                        'omsetning_omsatteregisterenhetsretter_item',
+                        #                        'omsetning_avsluttetav',
+                        #                        'anmerketavids_materialised',
+                        #                        'tekster',
+                        #                        'omsetning_omsetningstypeid_value',
+                        #                        'aarsakgebyrfritakid_value',
+                        #                        'omsetning_vederlag_valutakodeid',
+                        #                        'oppdatertav',
+                        #                        'sluttdato',
+                        #                        'endretavids_materialised',
+                        #                        'omsetning_sluttdato',
+                        #                        'anmerketavids_cachedvalue_item',
+                        #                        'oppdateringsdato_timestamp',
+                        #                        'heftelseiannenrettids_materialised',
+                        #                        'omsetning_dokumentavgift_valutakodeid',
+                        #                        'endretavids_cachedvalue_item',
+                        #                        'tekster_item',
+                        #                        'omsetning_dokumentavgiftsaarsakid_value',
+                        #                        'omsetning_dokumentavgiftsgrunnlag_beloepstekst',
+                        #                        'omsetning_vederlag_beloepstekst',
+                        #                        'avsluttetav',
+                        #                        'omsetning_dokumentavgiftsgrunnlag_valutakodeid',
+                        #                        'heftelseiannenrettids_cachedvalue_item'],
+                        #                 errors="ignore")
+                        #
+                        # view.drop(columns=request_cols, inplace=True)
+                        # view["active"] = transfer_type == "active"
+                        # view["get_date"] = pd.Timestamp.now()
+                        view = api.trim_output(df = df, db=db, request_cols=request_cols,transfer_type=transfer_type)
+                        logger.info(f'⬅️  Output from data cleaning: {len(view)}')
                         if args.save:
-                            bq.to_bq(df=view, table_name="cadastrals", dataset_name="staging", if_exists="merge",merge_on=["item_id"])
-
+                            bq.to_bq(df=view,
+                                     table_name = "cadastrals",
+                                     dataset_name = "staging",
+                                     if_exists = "merge",
+                                     #if_exists="replace",
+                                     merge_on = ["id_value"],
+                                     explicit_schema = {"get_date" : "TIMESTAMP"}
+                                     )
+                            query_to_exe = """MERGE INTO `sibr-market.staging.cadastrals` T
+                                                                            USING (
+                                                                              SELECT id_value
+                                                                              FROM (
+                                                                                SELECT
+                                                                                  id_value,
+                                                                                  ROW_NUMBER() OVER(PARTITION BY item_id ORDER BY get_date DESC) as rn
+                                                                                FROM `sibr-market.staging.cadastrals`
+                                                                                WHERE active = TRUE
+                                                                              )
+                                                                              WHERE rn > 1 -- Finn alle som IKKE er den nyeste (rn=1)
+                                                                            ) S
+                                                                            ON T.id_value = S.id_value
+                                                                            WHEN MATCHED THEN
+                                                                              UPDATE SET active = FALSE;"""
+                            bq.exe_query(query_to_exe)
 
     except Exception as e:
         logger.error(f'Error getting properties: {e}')
 
     finally:
+        logger.info(f'========= PROGRAM FINISHED IN {datetime.now() - starttime} \n')
         await api.close()
-
 
 if __name__ == "__main__" :
     asyncio.run(main())
