@@ -123,7 +123,7 @@ if __name__ == "__main__":
         if args.task in ["statens-vegvesen","all"]:
             #STATENS VEGVESEN har en request limit på 50.000 request pr dag
             if not args.limit:
-                limit = None
+                limit = 50000
             else:
                 limit = args.limit
             query = """
@@ -132,7 +132,7 @@ if __name__ == "__main__":
                     WHERE NOT EXISTS (SELECT 1
                                       FROM `sibr-market.staging.statens_vegvesen` s
                                       WHERE s.item_id = c.item_id)
-                      AND reg_num IS NOT NULL \
+                      AND reg_num IS NOT NULL 
                     """
             if limit:
                 query += f'\nLIMIT {limit}'
