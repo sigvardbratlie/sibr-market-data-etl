@@ -2,7 +2,7 @@ from sibr_module import BigQuery, SecretsManager
 import asyncio
 import pandas as pd
 from urllib.parse import quote_plus
-from sibr_api import ApiBase,NotFoundError
+from sibr_api import ApiBase,NotFoundError,RateLimitError
 
 # import aiohttp
 # import os

@@ -4,7 +4,8 @@ from datetime import datetime
 import argparse
 from dotenv import load_dotenv
 from pathlib import Path
-from src.api import DataApi,RateLimitError
+from src.api import DataApi
+from sibr_api import RateLimitError
 from sibr_module import Logger
 
 load_dotenv()
@@ -120,6 +121,7 @@ if __name__ == "__main__":
                     await api.close()
 
         if args.task in ["statens-vegvesen","all"]:
+            #STATENS VEGVESEN har en request limit på 50.000 request pr dag
             if not args.limit:
                 limit = None
             else:
@@ -143,7 +145,7 @@ if __name__ == "__main__":
                                                    transformer=api.transform_cars,
                                                    saver=api.save_cars,
                                                    concurrent_requests=30,
-                                                   save_interval=7500,
+                                                   save_interval=9000,
                                                    return_result=False)
             except RateLimitError as e:
                 logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')

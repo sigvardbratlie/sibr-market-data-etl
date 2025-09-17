@@ -23,9 +23,7 @@ atpublic==5.1
 attrs==25.3.0
     # via aiohttp
 bigframes==2.17.0
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 cachetools==5.5.2
     # via google-auth
 certifi==2025.8.3
@@ -51,13 +49,10 @@ db-dtypes==1.4.3
     #   bigframes
     #   google-cloud-bigquery
     #   pandas-gbq
-    #   sibr-module
 decorator==5.2.1
     # via
     #   gcsfs
     #   ipython
-et-xmlfile==2.0.0
-    # via openpyxl
 executing==2.2.0
     # via stack-data
 fonttools==4.59.1
@@ -75,7 +70,6 @@ gcsfs==2025.7.0
     # via
     #   -r requirements.in
     #   bigframes
-    #   sibr-module
 geopandas==1.1.1
     # via
     #   -r requirements.in
@@ -123,79 +117,60 @@ google-auth-oauthlib==1.2.2
     #   gcsfs
     #   pandas-gbq
     #   pydata-google-auth
-    #   sibr-module
 google-cloud==0.34.0
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 google-cloud-appengine-logging==1.6.2
     # via
     #   -r requirements.in
     #   google-cloud-logging
-    #   sibr-module
 google-cloud-audit-log==0.3.2
     # via
     #   -r requirements.in
     #   google-cloud-logging
-    #   sibr-module
 google-cloud-bigquery[bqstorage,pandas]==3.36.0
     # via
     #   -r requirements.in
     #   bigframes
     #   pandas-gbq
-    #   sibr-module
 google-cloud-bigquery-connection==1.18.3
     # via
     #   -r requirements.in
     #   bigframes
-    #   sibr-module
 google-cloud-bigquery-storage==2.32.0
     # via
     #   -r requirements.in
     #   bigframes
     #   google-cloud-bigquery
-    #   sibr-module
 google-cloud-core==2.4.3
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
     #   google-cloud-logging
     #   google-cloud-storage
-    #   sibr-module
 google-cloud-functions==1.20.4
     # via
     #   -r requirements.in
     #   bigframes
-    #   sibr-module
 google-cloud-iam==2.19.1
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 google-cloud-logging==3.12.1
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 google-cloud-resource-manager==1.14.2
     # via
     #   -r requirements.in
     #   bigframes
-    #   sibr-module
 google-cloud-secret-manager==2.24.0
-    # via
-    #   -r requirements.in
-    #   sibr-module
+    # via -r requirements.in
 google-cloud-storage==3.3.0
     # via
     #   -r requirements.in
     #   bigframes
     #   gcsfs
-    #   sibr-module
 google-crc32c==1.7.1
     # via
     #   -r requirements.in
     #   google-cloud-storage
     #   google-resumable-media
-    #   sibr-module
 google-resumable-media==2.7.2
     # via
     #   google-cloud-bigquery
@@ -223,7 +198,6 @@ grpcio==1.74.0
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-    #   sibr-module
 grpcio-status==1.74.0
     # via google-api-core
 humanize==4.13.0
@@ -246,8 +220,6 @@ ipywidgets==8.1.7
     # via bigframes
 jedi==0.19.2
     # via ipython
-joblib==1.5.2
-    # via sibr-module
 jupyterlab-widgets==3.0.15
     # via ipywidgets
 kiwisolver==1.4.9
@@ -276,11 +248,8 @@ numpy==2.3.2
     #   pandas-gbq
     #   pyogrio
     #   shapely
-    #   sibr-module
 oauthlib==3.3.1
     # via requests-oauthlib
-openpyxl==3.1.5
-    # via sibr-module
 opentelemetry-api==1.36.0
     # via google-cloud-logging
 packaging==25.0
@@ -307,7 +276,6 @@ pandas-gbq==0.29.2
     #   -r requirements.in
     #   bigframes
     #   google-cloud-bigquery
-    #   sibr-module
 parso==0.8.5
     # via jedi
 pathlib==1.0.1
@@ -363,7 +331,6 @@ pyarrow==21.0.0
     #   db-dtypes
     #   google-cloud-bigquery
     #   pandas-gbq
-    #   sibr-module
 pyasn1==0.6.1
     # via
     #   pyasn1-modules
@@ -400,12 +367,11 @@ python-dotenv==1.1.1
     # via
     #   -r requirements.in
     #   sibr-api
+    #   sibr-module
 pytz==2025.2
     # via
     #   bigframes
     #   pandas
-pyyaml==6.0.2
-    # via sibr-module
 requests==2.32.5
     # via
     #   -r requirements.in
@@ -428,7 +394,7 @@ shapely==2.1.1
     #   geopandas
 sibr-api==0.3.2
     # via -r requirements.in
-sibr-module==0.2.2
+sibr-module==0.2.10
     # via -r requirements.in
 six==1.17.0
     # via python-dateutil
