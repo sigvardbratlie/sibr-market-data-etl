@@ -63,20 +63,22 @@ class SibrBase:
         self.cs = CStorage(project_id = self._project_id , logger=self.logger, bucket_name=self._bucket_name)
         self.logger.debug(f'Dataset: {self.dataset} | | Replace: {self.replace}')
 
-    def save_data(self,df,table_name):
+    def save_data(self,df,table_name,explicit_schema= None):
         if self.task_name not in ['admin','clean','pre_processed','raw','predictions']:
             raise ValueError(f'Task name "{self.task_name}" is not allowed for saving data. Must be one of: "admin", "clean", "pre_processed", "raw", "predictions".')
         if self.replace:
             self.bq.to_bq(df,
                      table_name=table_name,
                      dataset_name=self.task_name,
-                     if_exists='replace')
+                     if_exists='replace',
+                    explicit_schema = explicit_schema)
         else:
             self.bq.to_bq(df,
                      table_name=table_name,
                      dataset_name=self.task_name,
                      if_exists='merge',
-                     merge_on=['item_id'])
+                     merge_on=['item_id'],
+                    explicit_schema=explicit_schema)
 
 class Clean(SibrBase):
     def __init__(self,dataset,logger = None,df = None):
@@ -429,6 +431,9 @@ class Clean(SibrBase):
         feat = feat.apply(lambda x: [i.strip().strip("'\"") for i in x if isinstance(i, str) and i.strip() != ''])
         f = feat.explode()
         return f
+
+    def rm_nan_cols(self,df) -> pd.DataFrame:
+        return df.dropna(axis=1, how='all')
 
     
     def read_in_data(self):
@@ -1071,19 +1076,26 @@ class Clean(SibrBase):
         df_el = df[df['fuel'] == 'el']
         df_fossil = df[df['fuel'] != 'el']
 
+        df_el["range"] = df_el["range"].astype("Int64")
+        #print(f'andel nans i range {df["range"].isna().sum() / len(df)}! {df["range"].loc[~df["range"].isna(),:].iloc[0]}')
         df_el.dropna(subset=['range'], inplace=True)
         df_el.drop(columns=['engine_volume'], inplace=True, errors='ignore')
+        df_el = self.rm_nan_cols(df_el)
         self.logger.debug(f'Length of df_el: {len(df_el)} | before saving to BQ. Replace is {self.replace}')
+
         if save_to_bq:
             self.save_data(df=df_el,
                            table_name=f'{self.dataset}_el')
 
 
         df_fossil = df_fossil.drop(columns=['range'], errors='ignore')
+        df_fossil = self.rm_nan_cols(df_fossil)
         self.logger.debug(f'Length of df_fossil: {len(df_fossil)} | Before saving to BQ. Replace is {self.replace}')
+
         if save_to_bq:
             self.save_data(df=df_fossil,
-                           table_name=f'{self.dataset}_fossil')
+                           table_name=f'{self.dataset}_fossil',
+                           explicit_schema = {"range" : "INT"})
 
         return df_el, df_fossil
     
@@ -1137,11 +1149,12 @@ class Clean(SibrBase):
         df['pre_processed_date'] = pd.Timestamp.now()
         self.logger.debug(f'Length of df: {len(df)} | after date columns')
         # ## ENSURE CORRECT DATA TYPES
-        df = self.ensure_num_types(df, num_types=['int'])
+        cols_to_convert = [col for col in df.columns if col != 'sqm_pr_bedroom']
+        df[cols_to_convert] = self.ensure_num_types(df[cols_to_convert], num_types=['int'])
         # ## SPLIT INTO APARTMENTS AND HOUSES AND RENTALS
         df_a = df[df['property_type'] == 'leilighet']
         df_h = df[df['property_type'] != 'leilighet']
-        rental_cols = ['property_type', 'bedrooms', 'floor', 'usable_area', 'day', 'month', 'year', 'sqm_pr_bedroom']
+        rental_cols = ['property_type', 'bedrooms', 'floor', 'usable_area', 'day', 'month', 'year', 'sqm_pr_bedroom',"item_id"]
         df_r = df[rental_cols]
         self.logger.debug(
             f'Split into apartments, houses and rentals: {len(df_a)} | {len(df_h)} | {len(df_r)}. Total length: {len(df_a) + len(df_h)}')
@@ -1164,11 +1177,13 @@ class Clean(SibrBase):
         df_h = pd.get_dummies(df_h, columns=['property_type'], drop_first=True)
         self.logger.debug(f'Length of df_h: {len(df_h)} | before saving to BQ. Replace is {self.replace}')
         if save_to_bq:
-            self.save_data(df_h,'homes_houses')
+            self.save_data(df_h,'homes_houses',
+                           explicit_schema = {"sqm_pr_bedroom" : "FLOAT",
+                                              "Joint_debt" : "INT"})
         # %% md
         # ## RENTAL PREDICTION
         df_r.rename({'usable_area': 'primary_area'}, axis=1, inplace=True)
-        order = ['bedrooms', 'floor',
+        order = ["item_id",'bedrooms', 'floor',
                  'primary_area', 'sqm_pr_bedroom',
                  'day', 'month', 'year', 'property_type']
         df_r = df_r[order]

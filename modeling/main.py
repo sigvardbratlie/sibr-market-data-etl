@@ -28,7 +28,7 @@ def main():
 
     # 3. Bruk action='store_true' for boolean-flagg
     parser.add_argument('--dataset', type=str, help=f'Dataset name. Choose from: {SUPPORTED_DATASETS}')
-    parser.add_argument('--task', type=str, help="Specific task to run: 'clean', 'pre_processed', 'train', 'predict'")
+    parser.add_argument('--task', type=str, choices = ['clean', 'pre_processed', 'train', 'predict'], help="Specific task to run")
 
     # Flagg for å styre kjøring
     parser.add_argument('--run_all', action='store_true', help='Run all tasks for cars and homes except training. To also run training, use --task train or --run_train.')
@@ -69,10 +69,10 @@ def main():
 
         # Kjør preprosessering. Bruk den rensede df-en hvis den finnes.
         if df is not None:
-            logger.info("Using dataframe from previous step for pre-processing.")
+            logger.info("Using dataframe from previous step for pre_processeding.")
             cleaner.run(task='pre_processed', df=df, save_to_bq=save_to_bq, replace=replace)
         else:
-            logger.info("No dataframe from previous step. Running pre-processing from source.")
+            logger.info("No dataframe from previous step. Running pre_processeding from source.")
             cleaner.run(task='pre_processed', save_to_bq=save_to_bq, replace=replace)
         logger.info(f"--- Finished cleaning pipeline for {dataset} ---")
 
