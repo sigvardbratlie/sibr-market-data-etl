@@ -37,14 +37,14 @@ class CustomBigQuery(BigQuery):
             '''
         if limit:
             sql += f' LIMIT {limit}'
-        self._logger.info(f"Reading raw data from dataset: raw.{dataset}")
+        self.logger.info(f"Reading raw data from dataset: raw.{dataset}")
         return self.read_bq(sql)
 
     def read_geonorge(self):
         return self.read_bq('SELECT * FROM admin.geo_norge_old')
 
     def read_salestime(self, replace=False) -> pd.DataFrame:
-        self._logger.warning("Method depreciated!")
+        self.logger.warning("Method depreciated!")
         if replace:
             sql = f'''
             SELECT
@@ -91,7 +91,7 @@ class CustomBigQuery(BigQuery):
             GROUP BY
               1;
               '''
-        self._logger.info(f"Reading salestime data from dataset: {self.dataset}")
+        self.logger.info(f"Reading salestime data from dataset: {self.dataset}")
         return self.read_bq(sql)
 
     def read_clean(self, dataset: str = None, replace=False, limit=None) -> pd.DataFrame:
@@ -109,7 +109,7 @@ class CustomBigQuery(BigQuery):
             '''
         if limit:
             sql += f' LIMIT {limit}'
-        self._logger.info(f"Reading clean data from dataset: {dataset}")
+        self.logger.info(f"Reading clean data from dataset: {dataset}")
         return self.read_bq(sql)
 
     def read_oslo(self, query=None, dataset_name=None, task=None):
@@ -310,7 +310,7 @@ class CustomBigQuery(BigQuery):
             elif 'usable_area' in df.columns:
                 df['ref_price'] = df.apply(lambda row: row['ref_price_pr_i_sqm'] * row['usable_area'], axis=1)
             else:
-                self._logger.warning(f'Missing usable or internal area: {df.columns}')
+                self.logger.warning(f'Missing usable or internal area: {df.columns}')
             # df['fees'] = df['ref_price'] * 0.025
             df.drop(columns=['pre_processed_date'], errors='ignore', inplace=True)
             return df
@@ -462,7 +462,7 @@ class CustomBigQuery(BigQuery):
             elif "bedrooms" in df_r.columns:
                 df_r["ref_rent"] = df_r.apply(lambda row: row['ref_rent_pr_bedroom'] * row['bedrooms'], axis=1)
             else:
-                self._logger("No bedroom or primary_area in dataframe: {df_r.columns}")
+                self.logger("No bedroom or primary_area in dataframe: {df_r.columns}")
             if df_a.empty or df_h.empty or df_o.empty or df_r.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
             return {'homes_apartments': df_a, 'homes_houses': df_h, 'homes_oslo': df_o, 'homes_rentals_oslo': df_r}
@@ -519,7 +519,7 @@ class CustomBigQuery(BigQuery):
             elif 'bedrooms' in df.columns:
                 df['ref_rent'] = df.apply(lambda row: row['ref_rent_pr_sqm'] * row['bedrooms'], axis=1)
             # else:
-            #     self._logger.warning(f'Missing both primary_area and bedrooms in dataframe: {df.columns}')
+            #     self.logger.warning(f'Missing both primary_area and bedrooms in dataframe: {df.columns}')
             if drop_hybel:
                 df = df[df["property_type_hybel"] != True]
                 df.drop(columns=["dealer_True"], errors="ignore", inplace=True)
@@ -636,7 +636,7 @@ class CustomBigQuery(BigQuery):
                                   last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
-            self._logger.info(
+            self.logger.info(
                 f"Length's of dataframes: \t rentals {len(df_a)}, rental_oslo {len(df_o)}, rental_co-living {len(df_co)}")
             return {'rentals': df_a, 'rentals_oslo': df_o, 'rentals_co-living': df_co}
 
@@ -658,6 +658,6 @@ class CustomBigQuery(BigQuery):
                                   last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
-            self._logger.info(
+            self.logger.info(
                 f"Length's of dataframes: \t rentals {len(df_a)}, rental_oslo {len(df_o)}, rental_co-living {len(df_co)}")
             return {'rentals': df_a, 'rentals_oslo': df_o, 'rentals_co-living': df_co}

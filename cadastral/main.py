@@ -1,5 +1,5 @@
 from kartverkets_api.kartverket import kartverketsAPI
-from sibr_module import BigQuery,LoggerV2
+from sibr_module import BigQuery, LoggerV2, SecretsManager
 import argparse
 import asyncio
 import pandas as pd
@@ -44,6 +44,7 @@ logger = LoggerV2("kartverketMain")
 
 async def main():
     #logger = LoggerV2("kartverketMain")
+    sm = SecretsManager(logger = logger)
     api = kartverketsAPI(logger=logger)
     bq = BigQuery(logger=logger,project_id="sibr-market")
 
