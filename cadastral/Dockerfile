@@ -8,5 +8,5 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
-ENTRYPOINT ["python"]
-CMD ["main.py","-up", "-s","-ow"]
+ENTRYPOINT ["python","main.py"]
+CMD []

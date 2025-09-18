@@ -44,7 +44,7 @@ logger = LoggerV2("kartverketMain")
 
 async def main():
     #logger = LoggerV2("kartverketMain")
-    sm = SecretsManager(logger = logger)
+    sm = SecretsManager(logger = logger, project_id="sibr-market")
     api = kartverketsAPI(logger=logger)
     bq = BigQuery(logger=logger,project_id="sibr-market")
 

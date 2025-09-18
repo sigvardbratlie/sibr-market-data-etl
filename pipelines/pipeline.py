@@ -73,7 +73,7 @@ def run_cadastral(): # Endret
     return dsl.ContainerSpec(
         image=CADASTRAL_IMAGE_URI,
         command=['python', 'main.py'],
-        args = ["-up","-s"]
+        args = ["-up", "-s","-ow"]
     )
 
 # ---- PIPELINE DEFINITION ----

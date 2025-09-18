@@ -458,7 +458,7 @@ class Clean(SibrBase):
         int_cols = [
             'model_year', 'mileage', 'transfer_fee', 'price_excl_transfer', 'power',
             'co2', 'weight', 'seats', 'prev_owners', 'doors', 'trailer_weight',
-            'last_eu', 'next_eu', 'range', 'battery', 'liens', 'total_price', 'rn'
+            'last_eu', 'next_eu', 'range', 'battery', 'liens', 'total_price', 'rn',
              'engine_volume', 'cargo_space'
         ]
 
