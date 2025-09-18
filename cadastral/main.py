@@ -40,17 +40,21 @@ type_group.add_argument("-f","--fill", action="store_true", help="Fills informat
 type_group.add_argument("-ow","--overwrite", action="store_true", help="Fills information for missing rows")
 
 logger = LoggerV2("kartverketMain")
+sm = SecretsManager(logger = logger, project_id="sibr-market")
+api = kartverketsAPI(logger=logger)
+bq = BigQuery(logger=logger,project_id="sibr-market")
+
+os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
+os.environ["GRUNNBOK_PASSWORD"] = sm.get_secret("GRUNNBOK_API_KEY")
+load_dotenv()
+print(f'SSS {api.password}')
 
 
 async def main():
     #logger = LoggerV2("kartverketMain")
-    sm = SecretsManager(logger = logger, project_id="sibr-market")
-    api = kartverketsAPI(logger=logger)
-    bq = BigQuery(logger=logger,project_id="sibr-market")
 
-    os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
-    os.environ["GRUNNBOK_PASSWORD"] = sm.get_secret("GRUNNBOK_API_KEY")
-    print(f'GRUNNBOK_PASSWORD : {os.environ["GRUNNBOK_PASSWORD"]}')
+
+
 
     starttime = datetime.now()
     args = parser.parse_args()
