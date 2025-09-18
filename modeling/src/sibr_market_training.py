@@ -896,7 +896,7 @@ class Clean(SibrBase):
             self.df = df
         df = self.df.dropna(subset='item_id')
         df.drop_duplicates(subset=['item_id'], inplace=True)
-        df.set_index('item_id', inplace=True)
+        #df.set_index('item_id', inplace=True)
         self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
         df.dropna(subset=['total_price', 'mileage', 'model_year'], inplace=True)
 
@@ -1092,7 +1092,7 @@ class Clean(SibrBase):
             self.df = df
         df = self.df.dropna(subset='item_id')
         df.drop_duplicates(subset=['item_id'], inplace=True)
-        df.set_index('item_id', inplace=True)
+        #df.set_index('item_id', inplace=True)
 
         self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
         df.dropna(subset=['price', 'usable_area', 'bedrooms'], inplace=True)
@@ -1192,7 +1192,7 @@ class Clean(SibrBase):
             self.df = df
         df = self.df.dropna(subset='item_id')
         df.drop_duplicates(subset=['item_id'], inplace=True)
-        df.set_index('item_id', inplace=True)
+        #df.set_index('item_id', inplace=True)
         self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
         df.dropna(subset=['monthly_rent', 'primary_area'], inplace=True)
         drop = ['address', 'description', 'contact_person', 'phone', 'url', 'country', 'title',
