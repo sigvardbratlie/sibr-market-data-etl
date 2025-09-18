@@ -8,9 +8,11 @@ pandas_gbq
 requests
 zeep
 bigframes
-sibr-module[all]>=0.2.10
-sibr-api>=0.3.2
-kartverkets-api>=0.1.7
 python-dotenv
 aiohttp
 httpx
+sibr-module[all]>=0.2.11
+sibr-module[bigquery]>=0.2.11
+sibr-module[secrets]>=0.2.11
+sibr-api>=0.3.2
+kartverkets-api>=0.1.7

@@ -406,7 +406,7 @@ sibr-api==0.3.2
     # via
     #   -r requirements.in
     #   kartverkets-api
-sibr-module[all,bigquery,logging,secrets,storage]==0.2.10
+sibr-module[all,bigquery,logging,secrets,storage]==0.2.11
     # via -r requirements.in
 six==1.17.0
     # via python-dateutil
