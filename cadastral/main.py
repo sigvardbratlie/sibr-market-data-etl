@@ -50,6 +50,7 @@ async def main():
 
     os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
     os.environ["GRUNNBOK_PASSWORD"] = sm.get_secret("GRUNNBOK_API_KEY")
+    print(f'GRUNNBOK_PASSWORD : {os.environ["GRUNNBOK_PASSWORD"]}')
 
     starttime = datetime.now()
     args = parser.parse_args()
@@ -70,7 +71,7 @@ async def main():
                              dataset_name = "admin",
                              table_name = "kartverket")
             except Exception as e:
-                logger.error(f'Error getting properties: {e}')
+                logger.error(f'Error getting properties from arg by_properties: {e}')
 
         elif args.by_period:
             if args.start_date and args.end_date:
@@ -142,7 +143,7 @@ async def main():
                         try:
                             df = await api.get_by_property(properties[batch:batch+BATCH_SIZE], transfer_type=transfer_type, ownership_type=ownership_type)
                         except Exception as e:
-                            logger.error(f'Error getting properties: {e}')
+                            logger.error(f'Error getting properties when calling get_by_property with batch: {batch}: {e}')
                             raise
 
                         logger.info(f'➡️ Input from batch kartverket API to data cleaning: {len(df)} with transfer type {transfer_type} and ownership type {ownership_type}')
@@ -211,7 +212,7 @@ async def main():
                             bq.exe_query(query_to_exe)
 
     except Exception as e:
-        logger.error(f'Error getting properties: {e}')
+        logger.error(f'Error getting properties. No arguments where called!: {e}')
 
     finally:
         logger.info(f'========= PROGRAM FINISHED IN {datetime.now() - starttime} \n')
