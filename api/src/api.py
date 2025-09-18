@@ -363,10 +363,14 @@ class DataApi(ApiBase):
             for col in df.columns:
                 if col in ["doors","seats"]:
                     if col in df.columns:
-                        df[col] = df[col].apply(lambda x: int(x[0]) if isinstance(x, list) and len(x) == 1 else x)
-                        df[col] = df[col].apply(lambda x: 0 if x == [] else x)
-                        df[col] = df[col].fillna(0)
-                        df[col] = df[col].astype(int)
+                        # df[col] = df[col].apply(lambda x: int(x[0]) if isinstance(x, list) and len(x) == 1 else x)
+                        # df[col] = df[col].apply(lambda x: 0 if x == [] else x)
+                        # df[col] = df[col].fillna(0)
+                        # df[col] = df[col].astype(int)
+
+                        df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) and x else x)
+                        # Fyll ut manglende verdier og konverter til tall
+                        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
 
                 elif col in ["model_year","weight","engine_volumn","power","trailer_weight","range"]:
                     if col in df.columns:

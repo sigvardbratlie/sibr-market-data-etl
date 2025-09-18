@@ -145,7 +145,7 @@ if __name__ == "__main__":
                                                    transformer=api.transform_cars,
                                                    saver=api.save_cars,
                                                    concurrent_requests=30,
-                                                   save_interval=9000,
+                                                   save_interval=1000,
                                                    return_result=False)
             except RateLimitError as e:
                 logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
