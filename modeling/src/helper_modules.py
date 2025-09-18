@@ -43,57 +43,6 @@ class CustomBigQuery(BigQuery):
     def read_geonorge(self):
         return self.read_bq('SELECT * FROM admin.geo_norge_old')
 
-    # def read_salestime(self, replace=False) -> pd.DataFrame:
-    #     self.logger.warning("Method depreciated!")
-    #     if replace:
-    #         sql = f'''
-    #         SELECT
-    #           nd.item_id,
-    #           PARSE_DATE('%Y-%m-%d', MIN(nd.scrape_date)) AS FIRST,
-    #           PARSE_DATE('%Y-%m-%d', MAX(nd.scrape_date)) AS LAST,
-    #           NULLIF( DATE_DIFF( PARSE_DATE('%Y-%m-%d', MAX(nd.scrape_date)), PARSE_DATE('%Y-%m-%d', MIN(nd.scrape_date)), DAY), 0) AS salgstid
-    #         FROM
-    #           `sibr-market.raw.{self.dataset}` AS nd
-    #         WHERE
-    #           nd.item_id NOT IN
-    #           (
-    #           SELECT item_id
-    #               FROM `sibr-market.raw.{self.dataset}`
-    #               WHERE
-    #                 scrape_date = (SELECT MIN(scrape_date) FROM`sibr-market.raw.{self.dataset}`)
-    #                 OR
-    #                 scrape_date = (SELECT MAX(scrape_date) FROM`sibr-market.raw.{self.dataset}` )
-    #                 )
-    #         GROUP BY
-    #           1;
-    #           '''
-    #     else:
-    #         sql = f'''
-    #         SELECT
-    #           nd.item_id,
-    #           PARSE_DATE('%Y-%m-%d', MIN(nd.scrape_date)) AS FIRST,
-    #           PARSE_DATE('%Y-%m-%d', MAX(nd.scrape_date)) AS LAST,
-    #           NULLIF( DATE_DIFF( PARSE_DATE('%Y-%m-%d', MAX(nd.scrape_date)), PARSE_DATE('%Y-%m-%d', MIN(nd.scrape_date)), DAY), 0) AS salgstid
-    #         FROM
-    #           `sibr-market.raw.{self.dataset}` AS nd
-    #           LEFT JOIN sibr-market.clean.{self.dataset} c ON c.item_id = nd.item_id
-    #         WHERE
-    #           nd.item_id NOT IN
-    #           (
-    #           SELECT item_id
-    #               FROM `sibr-market.raw.{self.dataset}`
-    #               WHERE
-    #                 scrape_date = (SELECT MIN(scrape_date) FROM`sibr-market.raw.{self.dataset}`)
-    #                 OR
-    #                 scrape_date = (SELECT MAX(scrape_date) FROM`sibr-market.raw.{self.dataset}` )
-    #                 )
-    #         AND c.item_id IS NULL
-    #         GROUP BY
-    #           1;
-    #           '''
-    #     self.logger.info(f"Reading salestime data from dataset: {self.dataset}")
-    #     return self.read_bq(sql)
-
     def read_clean(self, dataset: str = None, replace=False, limit=None) -> pd.DataFrame:
         if not dataset:
             dataset = self.dataset
@@ -105,7 +54,7 @@ class CustomBigQuery(BigQuery):
         else:
             sql = f'''
             SELECT m.* FROM sibr-market.clean.{dataset} m
-            WHERE DATE(m.scrape_date) = (SELECT MAX(PARSE_DATE('%Y-%m-%d',scrape_date)) FROM sibr-market.raw.{dataset})
+            WHERE DATE(m.scrape_date) = (SELECT MAX(scrape_date) FROM sibr-market.raw.{dataset})
             '''
         if limit:
             sql += f' LIMIT {limit}'
@@ -141,7 +90,7 @@ class CustomBigQuery(BigQuery):
                                  LEFT JOIN admin.geo_oslo g ON c.postal_code = g.postnummer
                                  JOIN admin.coordinates co ON co.item_id = p.item_id
                         WHERE LOWER(c.municipality) = "oslo" \
-                        AND DATE(c.scrape_date) = (SELECT MAX(PARSE_DATE('%Y-%m-%d',scrape_date)) FROM sibr-market.raw.{self.dataset})
+                        AND DATE(c.scrape_date) = (SELECT MAX(scrape_date) FROM sibr-market.raw.{self.dataset})
                         '''
             else:
                 raise ValueError(f'Invalid task: {task}. Choose between "train" or "predict"')
@@ -185,7 +134,7 @@ class CustomBigQuery(BigQuery):
         # 4. Håndter 'last_scrape_date'-parameteren
         if last_scrape_date:
             where_clauses.append(
-                f"DATE(a.year, a.month, a.day) = (SELECT MAX(PARSE_DATE('%Y-%m-%d', scrape_date)) FROM sibr-market.raw.{self.dataset})")
+                f"DATE(a.year, a.month, a.day) = (SELECT MAX(scrape_date) FROM sibr-market.raw.{self.dataset})")
 
         # --- Sett sammen den endelige spørringen ---
         sql = f"SELECT {', '.join(select_clauses)} {from_clause}"
@@ -359,7 +308,7 @@ class CustomBigQuery(BigQuery):
                          ON go.postnummer = h.postal_code
                          """
             if last_scrape:
-                query_oslo += f"WHERE DATE(a.year, a.month, a.day) = (SELECT MAX(PARSE_DATE('%Y-%m-%d', scrape_date)) FROM sibr-market.raw.homes) \n "
+                query_oslo += f"WHERE DATE(a.year, a.month, a.day) = (SELECT MAX(scrape_date) FROM sibr-market.raw.homes) \n "
             if random_samples:
                 query_oslo += f"WHERE RAND() < {random_samples} \n"
             if limit:
@@ -451,8 +400,8 @@ class CustomBigQuery(BigQuery):
                     ON go.postnummer = h.postal_code
                     WHERE DATE (a.year \
                         , a.month \
-                        , a.day) = (SELECT MAX (PARSE_DATE('%Y-%m-%d' \
-                        , scrape_date)) FROM sibr-market.raw.homes)
+                        , a.day) = (SELECT MAX(scrape_date) FROM sibr-market.raw.homes)
+                        , 
                     """
             df_r = self.read_bq(query=query)
             df_r = prep_data(df_r, unimportant_columns=unimportant_columns)
