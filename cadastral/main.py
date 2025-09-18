@@ -48,9 +48,8 @@ async def main():
     api = kartverketsAPI(logger=logger)
     bq = BigQuery(logger=logger,project_id="sibr-market")
 
-    secrets = sm.get_secrets(["GRUNNBOK_PASSWORD","GRUNNBOK_USERNAME"])
-    for sid,val in secrets.items():
-        os.environ[sid] = val
+    os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
+    os.environ["GRUNNBOK_PASSWORD"] = sm.get_secret("GRUNNBOK_API_KEY")
 
     starttime = datetime.now()
     args = parser.parse_args()
