@@ -42,4 +42,4 @@ torchmetrics
 tqdm
 xgboost
 python-dotenv
-sibr-module>=0.2.10
+sibr-module[all]>=0.2.10
