@@ -41,13 +41,11 @@ type_group.add_argument("-ow","--overwrite", action="store_true", help="Fills in
 
 logger = LoggerV2("kartverketMain")
 sm = SecretsManager(logger = logger, project_id="sibr-market")
-api = kartverketsAPI(logger=logger)
-bq = BigQuery(logger=logger,project_id="sibr-market")
-
 os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
 os.environ["GRUNNBOK_PASSWORD"] = sm.get_secret("GRUNNBOK_API_KEY")
 load_dotenv()
-print(f'SSS {api.password}')
+api = kartverketsAPI(logger=logger)
+bq = BigQuery(logger=logger,project_id="sibr-market")
 
 
 async def main():
