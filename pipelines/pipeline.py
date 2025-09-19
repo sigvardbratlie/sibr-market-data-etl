@@ -29,7 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--commit-sha", type = str, default="latest", help = "The git commit SHA to use for the image tag")
 args = parser.parse_args()
 COMMIT_TAG = args.commit_sha
-print(f'Using image tag: {COMMIT_TAG}')
+#print(f'Using image tag: {COMMIT_TAG}')
 
 SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{COMMIT_TAG}"
 API_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{COMMIT_TAG}"
