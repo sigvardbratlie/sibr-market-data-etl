@@ -26,28 +26,41 @@ BUCKET_URI = f'gs://{BUCKET_NAME}'
 REPO = 'sibr-market-repo'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--commit-sha", type = str, default="latest", help = "The git commit SHA to use for the image tag")
+parser.add_argument("--commit-sha", type = str, help = "The git commit SHA to use for the image tag")
+parser.add_argument("--tag-scraping", type = str,)
+parser.add_argument("--tag-api",type = str)
+parser.add_argument("--tag-modeling",type = str)
+parser.add_argument("--tag-cadastral",type = str)
+
 args = parser.parse_args()
-COMMIT_TAG = args.commit_sha
-#print(f'Using image tag: {COMMIT_TAG}')
+TAG = args.commit_sha if args.commit_sha else 'latest'
 
-SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{COMMIT_TAG}"
-API_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{COMMIT_TAG}"
-MODELING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/modeling:{COMMIT_TAG}"
-CADASTRAL_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/cadastral:{COMMIT_TAG}"
 
-# ---- PIPELINE COMPONENTS ----
+image_tags = {"scraping": args.tag_scraping if args.tag_scraping else TAG,
+              "api" : args.tag_api if args.tag_api else TAG,
+              "modeling" : args.tag_modeling if args.tag_modeling else TAG,
+              "cadastral" : args.tag_cadastral if args.tag_cadastral else TAG}
+
+
+# SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{TAG}"
+# API_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{TAG}"
+# MODELING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/modeling:{TAG}"
+# CADASTRAL_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/cadastral:{TAG}"
+
+def mk_image_uri(task : str):
+    return f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/{task}:{image_tags[task]}"
+
 @dsl.container_component
 def run_scraping():
     return dsl.ContainerSpec(
-        image=SCRAPING_IMAGE_URI,
+        image=mk_image_uri("scraping"),
         command=['python', 'main.py'],
     )
 
 @dsl.container_component
 def run_api(): # Endret
     return dsl.ContainerSpec(
-        image=API_IMAGE_URI,
+        image=mk_image_uri("api"),
         command=['python', 'main.py'],
         args = ["--task", "all"]
     )
@@ -55,7 +68,7 @@ def run_api(): # Endret
 @dsl.container_component
 def run_predict(): # Endret
     return dsl.ContainerSpec(
-        image=MODELING_IMAGE_URI,
+        image=mk_image_uri("modeling"),
         command=['python', 'main.py'],
         args=['--run-predict']
     )
@@ -63,7 +76,7 @@ def run_predict(): # Endret
 @dsl.container_component
 def run_clean(): # Endret
     return dsl.ContainerSpec(
-        image=MODELING_IMAGE_URI,
+        image=mk_image_uri("modeling"),
         command=['python', 'main.py'],
         args=['--run-clean']
     )
@@ -71,7 +84,7 @@ def run_clean(): # Endret
 @dsl.container_component
 def run_cadastral(): # Endret
     return dsl.ContainerSpec(
-        image=CADASTRAL_IMAGE_URI,
+        image=mk_image_uri("cadastral"),
         command=['python', 'main.py'],
         args = ["-up", "-s","-ow"]
     )
@@ -89,15 +102,15 @@ def create_pipeline(
     # scraping_task.set_display_name('1. Scraping Data')
     # scraping_task.set_caching_options(False)
 
-    # Step 2: Run cleaning
-    cleaning_task = run_clean()
-    #cleaning_task = run_clean().after(scraping_task)
-    cleaning_task.set_display_name('2. Cleaning Data')
-    cleaning_task.set_caching_options(False)
+    # # Step 2: Run cleaning
+    # #cleaning_task = run_clean()
+    # cleaning_task = run_clean().after(scraping_task)
+    # cleaning_task.set_display_name('2. Cleaning Data')
+    # cleaning_task.set_caching_options(False)
 
     # Step 3: Run api
-    #geocoding_task = run_geocoding()
-    api_task = run_api().after(cleaning_task)
+    api_task = run_api()
+    #api_task = run_api().after(cleaning_task)
     api_task.set_display_name('3. API step')
     api_task.set_caching_options(False)
 
@@ -118,11 +131,6 @@ if __name__ == '__main__':
         package_path=PIPELINE_JSON
     )
 
-    client = storage.Client()
-    bucket = client.get_bucket(BUCKET_NAME)
-    blob = bucket.blob(PIPELINE_JSON)
-    blob.upload_from_filename(PIPELINE_JSON)
-
     aiplatform.init(project=PROJECT_ID,
                     location=REGION,
                     service_account="pipeline@sibr-market.iam.gserviceaccount.com")
@@ -132,6 +140,11 @@ if __name__ == '__main__':
         pipeline_root=BUCKET_URI,
     )
 
+    # client = storage.Client()
+    # bucket = client.get_bucket(BUCKET_NAME)
+    # blob = bucket.blob(PIPELINE_JSON)
+    # blob.upload_from_filename(PIPELINE_JSON)
+    #
     # job_schedule = job.create_schedule(
     #     display_name="run-sibr-market-pipeline",
     #     cron = "0 2 */3 * *",

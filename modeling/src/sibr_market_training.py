@@ -624,8 +624,11 @@ class Clean(SibrBase):
 
         date_fields = ["last_eu", "next_eu","last_updated"]
         for field in date_fields:
-            df.loc[:,field] = df[field].apply(lambda x: self.extract_datetime(x) if isinstance(x, str) else x)
-            df[field] = pd.to_datetime(df[field])
+            if field in df.columns:
+                df.loc[:,field] = df[field].apply(lambda x: self.extract_datetime(x) if isinstance(x, str) else x)
+                df[field] = pd.to_datetime(df[field])
+            else:
+                self.logger.warning(f'Field {field} missing from dataframe. Columns are {df.columns}')
         add_if_missing = ['web', 'email', 'warranty', 'color_interior', 'gearbox_type', 'warranty_length',
                           'condition_report']
         df = self.add_missing_features(df, add_if_missing)
@@ -1064,7 +1067,6 @@ class Clean(SibrBase):
         #     return ', '.join(filtered) if filtered else np.nan
         #
         # df['features'] = df['features'].apply(filter_top_features)
-        # %% md
         # ## DATE COLUMNS
         df = self.split_date(df, date_col='scrape_date')
         df = self.split_date(df, date_col='last_updated')
@@ -1196,7 +1198,6 @@ class Clean(SibrBase):
         df_r = pd.get_dummies(df_r, columns=['property_type'], drop_first=True)
 
         self.logger.debug(f'Length of df_r: {len(df_r)} | before saving to BQ. Replace is {self.replace}')
-        # %%
         if save_to_bq:
             self.save_data(df_r,'homes_rentals')
 
