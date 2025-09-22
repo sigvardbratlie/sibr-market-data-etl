@@ -41,7 +41,6 @@ image_tags = {"scraping": args.tag_scraping if args.tag_scraping else TAG,
               "modeling" : args.tag_modeling if args.tag_modeling else TAG,
               "cadastral" : args.tag_cadastral if args.tag_cadastral else TAG}
 
-
 # SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{TAG}"
 # API_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{TAG}"
 # MODELING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/modeling:{TAG}"
@@ -97,20 +96,20 @@ def run_cadastral(): # Endret
 )
 def create_pipeline(
 ):
-    # # Step 1: Run scraping
-    # scraping_task = run_scraping()
-    # scraping_task.set_display_name('1. Scraping Data')
-    # scraping_task.set_caching_options(False)
+    # Step 1: Run scraping
+    scraping_task = run_scraping()
+    scraping_task.set_display_name('1. Scraping Data')
+    scraping_task.set_caching_options(False)
 
-    # # Step 2: Run cleaning
-    # #cleaning_task = run_clean()
-    # cleaning_task = run_clean().after(scraping_task)
-    # cleaning_task.set_display_name('2. Cleaning Data')
-    # cleaning_task.set_caching_options(False)
+    # Step 2: Run cleaning
+    #cleaning_task = run_clean()
+    cleaning_task = run_clean().after(scraping_task)
+    cleaning_task.set_display_name('2. Cleaning Data')
+    cleaning_task.set_caching_options(False)
 
     # Step 3: Run api
-    api_task = run_api()
-    #api_task = run_api().after(cleaning_task)
+    #api_task = run_api()
+    api_task = run_api().after(cleaning_task)
     api_task.set_display_name('3. API step')
     api_task.set_caching_options(False)
 
@@ -140,18 +139,18 @@ if __name__ == '__main__':
         pipeline_root=BUCKET_URI,
     )
 
-    # client = storage.Client()
-    # bucket = client.get_bucket(BUCKET_NAME)
-    # blob = bucket.blob(PIPELINE_JSON)
-    # blob.upload_from_filename(PIPELINE_JSON)
-    #
-    # job_schedule = job.create_schedule(
-    #     display_name="run-sibr-market-pipeline",
-    #     cron = "0 2 */3 * *",
-    #     max_concurrent_run_count = 1,
-    # )
-    # print(f'Created schedule: {job_schedule.name}')
+    client = storage.Client()
+    bucket = client.get_bucket(BUCKET_NAME)
+    blob = bucket.blob(PIPELINE_JSON)
+    blob.upload_from_filename(PIPELINE_JSON)
 
-    print(f'Starting the first run immediately')
-    job.run()
-    print(f'Finished starting the first run')
+    job_schedule = job.create_schedule(
+        display_name="run-sibr-market-pipeline",
+        cron = "0 2 */3 * *",
+        max_concurrent_run_count = 1,
+    )
+    print(f'Created schedule: {job_schedule.name}')
+
+    # print(f'Starting the first run immediately')
+    # job.run()
+    # print(f'Finished starting the first run')

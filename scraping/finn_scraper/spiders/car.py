@@ -135,7 +135,7 @@ class CarSpider(FinnBaseSpider):
             if re.search(r'\d{4}.*', addr):
                 item['address'] = addr
                 break
-        item['last_updated'] = response.css('p.s-text-subtle.mb-0:contains("Sist endret") + p.font-bold.mb-0::text').get()
+        item['last_updated'] = response.css('p.s-text-subtle.mb-0:contains("Sist oppdatert") + p.font-bold.mb-0::text').get()
 
         item['scrape_date'] = datetime.now().strftime('%Y-%m-%d')
         item['country'] = 'NO'
@@ -253,3 +253,6 @@ class CarSpider(FinnBaseSpider):
         item['dealer_n_ratings'] = None
 
         yield item
+
+
+#scrapy shell 'https://www.finn.no/mobility/item/428241700' -s ITEM_PIPELINES={}

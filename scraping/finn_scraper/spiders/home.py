@@ -127,3 +127,4 @@ class HomeSpider(FinnBaseSpider):
 
         yield item
 
+#scrapy shell 'https://www.finn.no/realestate/homes/ad.html?finnkode=428295165' -s ITEM_PIPELINES={}

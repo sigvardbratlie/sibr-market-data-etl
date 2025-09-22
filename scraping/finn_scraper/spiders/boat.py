@@ -93,7 +93,7 @@ class BoatSpider(FinnBaseSpider):
                 item['address'] = addr
                 break
         item['last_updated'] = response.css(
-            'p.s-text-subtle.mb-0:contains("Sist endret") + p.font-bold.mb-0::text').get()  # ok
+            'p.s-text-subtle.mb-0:contains("Sist oppdatert") + p.font-bold.mb-0::text').get()  # ok
         item['scrape_date'] = datetime.now().strftime('%Y-%m-%d')
         item['country'] = 'NO'
 
