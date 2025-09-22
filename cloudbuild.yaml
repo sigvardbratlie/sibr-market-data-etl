@@ -81,3 +81,4 @@ steps:
   - |
     pip install -r pipelines/requirements.txt
     python pipelines/pipeline.py --commit-sha ${COMMIT_SHA}
+    
