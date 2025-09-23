@@ -218,7 +218,7 @@ joblib==1.4.2
     # via sibr-module
 jupyterlab-widgets==3.0.15
     # via ipywidgets
-kartverkets-api==0.1.9
+kartverkets-api==0.1.14
     # via -r requirements.in
 kiwisolver==1.4.9
     # via matplotlib

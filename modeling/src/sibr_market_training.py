@@ -710,6 +710,9 @@ class Clean(SibrBase):
         df['ownership_type'] = df['ownership_type'].str.replace(r'^eieform', '', case=False, regex=True).str.strip()
         df['ownership_type'] = df['ownership_type'].apply(
             lambda x: x.replace('(Selveier)', "").strip() if isinstance(x, str) else x)
+        cond = (df["ownership_type"].isna()) & ((df["property_type"].str.lower() != "leilighet") | (df["section_num"].notna()))
+        df.loc[cond, "ownership_type"] = "Eier"
+
         df['property_type'] = df['property_type'].str.replace(r'^boligtype', '', case=False, regex=True)
         df['property_type'] = df['property_type'].apply(lambda x: x.replace('/', "_") if isinstance(x, str) else x).str.strip()
         df['dealer'] = df['dealer'].fillna('private').str.strip()
@@ -1202,6 +1205,108 @@ class Clean(SibrBase):
             self.save_data(df_r,'homes_rentals')
 
         return df_a, df_h, df_r
+
+    def pre_process_new_homes(self,df = None,save_to_bq = True):
+        if df:
+            self.df = df
+        df = self.df.dropna(subset='item_id')
+        df.drop_duplicates(subset=['item_id'], inplace=True)
+        #df.set_index('item_id', inplace=True)
+
+        self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
+        df.dropna(subset=['price', 'usable_area', 'bedrooms'], inplace=True)
+
+        drop = ['district', 'address', 'title', 'sold',
+                'description', 'email', 'contact_person', 'phone', 'url', 'new', 'country',
+                'facilities', 'energy_rating',
+                'rn', 'FIRST', 'LAST', 'postal_code', 'municipality', 'county', 'region', 'salgstid',
+                'facilities', 'tax_value',
+                'total_price', 'price_pr_bedroom', 'price_pr_sqm', 'web', 'cadastral_num', 'unit_num', 'section_num',
+                'clean_date','price_pr_i_sqm','fees', "coop_name","apartment_num"
+                #'internal_area'
+                ]
+        df.drop(columns=drop, inplace=True,errors='ignore')
+
+        df = self.rm_empty_features(df)
+        self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on price, usable_area and bedrooms')
+        # ## DUMMY VARIABLES
+        df = df[df['property_type'] != 'Garasje/Parkering']
+        df['dealer'] = df['dealer'].apply(lambda x: False if x.lower() == 'private' else True)
+
+        df = self.process_bool(df)
+
+        prop_type = ['Leilighet',
+                     'Enebolig',
+                     'Tomannsbolig',
+                     'Rekkehus',
+                     'Gårdsbruk_Småbruk',
+                     'Andre',
+                     'Bygård_Flermannsbolig']
+        own_type = ['Eier', 'Andel', 'Aksje', 'Annet', 'Obligasjon']
+
+        df = self.mk_cat(df, 'property_type', prop_type)
+        df = self.mk_cat(df, 'ownership_type', own_type)
+
+        df = pd.get_dummies(df, columns=['ownership_type'], drop_first=True)
+        self.logger.debug(f'Length of df: {len(df)} | after dummy variables')
+
+        # ## DATE COLUMNS
+        df = self.split_date(df, date_col='scrape_date')
+        df = self.split_date(df,date_col='last_updated')
+        df['pre_processed_date'] = pd.Timestamp.now()
+        self.logger.debug(f'Length of df: {len(df)} | after date columns')
+        # ## ENSURE CORRECT DATA TYPES
+        cols_to_convert = [col for col in df.columns if col != 'sqm_pr_bedroom']
+        df[cols_to_convert] = self.ensure_num_types(df[cols_to_convert], num_types=['int'])
+        # ## SPLIT INTO APARTMENTS AND HOUSES AND RENTALS
+        df_a = df[df['property_type'] == 'leilighet']
+        df_h = df[df['property_type'] != 'leilighet']
+        rental_cols = ['property_type', 'bedrooms', 'floor', 'usable_area', 'day', 'month', 'year', 'sqm_pr_bedroom',"item_id"]
+        df_r = df[rental_cols]
+        self.logger.debug(
+            f'Split into apartments, houses and rentals: {len(df_a)} | {len(df_h)} | {len(df_r)}. Total length: {len(df_a) + len(df_h)}')
+        # ## APARTMENTS
+        df_a = pd.get_dummies(df_a, columns=['property_type'], drop_first=True)
+        #df_a.loc[:, 'joint_debt'] = df_a['joint_debt'].fillna(0)
+        #df_a.loc[:, 'collective_assets'] = df_a['collective_assets'].fillna(0)
+        df_a.loc[:, 'balcony'] = df_a['balcony'].fillna(0)
+        df_a.loc[:, 'floor'] = df_a['floor'].fillna(0)
+        df_a.loc[:, 'rooms'] = df_a['rooms'].fillna(df_a['bedrooms'] + 1)
+        df_a.loc[:, 'external_area'] = df_a['external_area'].fillna(0)
+        df_a.loc[:, 'monthly_common_cost'] = df_a['monthly_common_cost'].fillna(0)
+        self.logger.debug(f'Length of df_a: {len(df_a)} | before saving to BQ. Replace is {self.replace}')
+        if save_to_bq:
+            self.save_data(df_a,'new_homes_apartments')
+        # ## HOUSES
+        drop = ['collective_assets', 'joint_debt', 'balcony', 'floor',
+                'monthly_common_cost', 'rooms', 'external_area']
+        df_h.drop(columns=drop, inplace=True,errors = "ignore")
+        df_h = pd.get_dummies(df_h, columns=['property_type'], drop_first=True)
+        self.logger.debug(f'Length of df_h: {len(df_h)} | before saving to BQ. Replace is {self.replace}')
+        if save_to_bq:
+            self.save_data(df_h,'new_homes_houses',
+                           explicit_schema = {"sqm_pr_bedroom" : "FLOAT",
+                                              })
+        # %% md
+        # ## RENTAL PREDICTION
+        df_r.rename({'usable_area': 'primary_area'}, axis=1, inplace=True)
+        order = ["item_id",'bedrooms', 'floor',
+                 'primary_area', 'sqm_pr_bedroom',
+                 'day', 'month', 'year', 'property_type']
+        df_r = df_r[order]
+        prop_type = ['Enebolig',
+                     'Leilighet',
+                     'Tomannsbolig',
+                     'Andre',
+                     'Rekkehus']
+        df_r = self.mk_cat(df_r,'property_type', prop_type)
+        df_r = pd.get_dummies(df_r, columns=['property_type'], drop_first=True)
+
+        self.logger.debug(f'Length of df_r: {len(df_r)} | before saving to BQ. Replace is {self.replace}')
+        if save_to_bq:
+            self.save_data(df_r,f'new_homes_rentals')
+
+        return df_a, df_h, df_r
             
     def pre_process_rentals(self,df = None,save_to_bq = True):
         if df:
@@ -1325,12 +1430,16 @@ class Clean(SibrBase):
                     cleaned_df = self.clean_homes()
                 elif self.dataset == 'rentals':
                     cleaned_df = self.clean_rentals()
+                elif self.dataset == "new_homes":
+                    cleaned_df = self.clean_homes()
                 else:
                     raise ValueError(f'Unsupported dataset: {self.dataset}')
 
                 if save_to_bq:
                     self.save_data(df = cleaned_df,
-                                   table_name = self.dataset
+                                   table_name = self.dataset,
+                                   explicit_schema = {"coop_unit_num" : "INTEGER",
+                                                      "coop_org_num" : "INTEGER"}
                                    )
                 return cleaned_df
             elif self.task_name == 'pre_processed':
@@ -1345,6 +1454,8 @@ class Clean(SibrBase):
                     pre_processed_df = self.pre_process_homes(save_to_bq=save_to_bq)
                 elif self.dataset == 'rentals':
                     pre_processed_df = self.pre_process_rentals(save_to_bq=save_to_bq)
+                elif self.dataset == 'new_homes':
+                    pre_processed_df = self.pre_process_new_homes(save_to_bq=save_to_bq)
                 else:
                     raise ValueError(f'Unsupported dataset: {self.dataset}')
         finally:

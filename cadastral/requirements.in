@@ -15,4 +15,4 @@ sibr-module[all]>=0.2.11
 sibr-module[bigquery]>=0.2.11
 sibr-module[secrets]>=0.2.11
 sibr-api>=0.3.2
-kartverkets-api>=0.1.9
+kartverkets-api>=0.1.14

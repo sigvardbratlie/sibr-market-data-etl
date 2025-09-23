@@ -18,17 +18,17 @@ if cred_filename:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(project_root.parent / cred_filename)
 
 # 2. Definer konstanter for å unngå "magiske strenger" og repetisjon
-SUPPORTED_DATASETS = ['cars', 'homes', 'rentals']
+SUPPORTED_DATASETS = ['cars', 'homes', 'rentals',"new_homes"]
 TRAIN_PREDICT_DATASETS = ['cars', 'homes']
-
+TASK_CHOICES = ['clean', 'pre_processed', 'train', 'predict']
 
 def main():
     """Hovedfunksjon for å kjøre skriptet."""
     parser = argparse.ArgumentParser(description="Run data processing and training pipelines for SIBR Market.")
 
     # 3. Bruk action='store_true' for boolean-flagg
-    parser.add_argument('--dataset', type=str, help=f'Dataset name. Choose from: {SUPPORTED_DATASETS}')
-    parser.add_argument('--task', type=str, choices = ['clean', 'pre_processed', 'train', 'predict'], help="Specific task to run")
+    parser.add_argument('--dataset', type=str, choices=SUPPORTED_DATASETS, help=f'Dataset name. Choose from: {SUPPORTED_DATASETS}')
+    parser.add_argument('--task', type=str, choices = TASK_CHOICES, help=f"Specific task to run. Choises {TASK_CHOICES}")
 
     # Flagg for å styre kjøring
     parser.add_argument('--run_all', action='store_true', help='Run all tasks for cars and homes except training. To also run training, use --task train or --run_train.')
@@ -145,7 +145,7 @@ def main():
             predict = Predict(dataset=args.dataset, logger=logger)
             predict.run()
         else:
-            raise ValueError("Task must be one of: 'clean', 'pre_processed', 'train', 'predict'.")
+            raise ValueError(f"Task must be one of: {TASK_CHOICES}")
 
     else:
         logger.info("No specific run command provided. Use --help for options.")
