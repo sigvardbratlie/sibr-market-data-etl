@@ -31,6 +31,8 @@ parser.add_argument("--tag-scraping", type = str,)
 parser.add_argument("--tag-api",type = str)
 parser.add_argument("--tag-modeling",type = str)
 parser.add_argument("--tag-cadastral",type = str)
+parser.add_argument("--run",action = "store_true",help = "Run the pipeline")
+parser.add_argument("--skip-schedule", action = "store_true", help = "Skip creating a schedule")
 
 args = parser.parse_args()
 TAG = args.commit_sha if args.commit_sha else 'latest'
@@ -139,18 +141,20 @@ if __name__ == '__main__':
         pipeline_root=BUCKET_URI,
     )
 
-    client = storage.Client()
-    bucket = client.get_bucket(BUCKET_NAME)
-    blob = bucket.blob(PIPELINE_JSON)
-    blob.upload_from_filename(PIPELINE_JSON)
+    if not args.skip_schedule:
+        client = storage.Client()
+        bucket = client.get_bucket(BUCKET_NAME)
+        blob = bucket.blob(PIPELINE_JSON)
+        blob.upload_from_filename(PIPELINE_JSON)
 
-    job_schedule = job.create_schedule(
-        display_name="run-sibr-market-pipeline",
-        cron = "0 2 */3 * *",
-        max_concurrent_run_count = 1,
-    )
-    print(f'Created schedule: {job_schedule.name}')
+        job_schedule = job.create_schedule(
+            display_name="run-sibr-market-pipeline",
+            cron = "0 2 */3 * *",
+            max_concurrent_run_count = 1,
+        )
+        print(f'Created schedule: {job_schedule.name}')
 
-    # print(f'Starting the first run immediately')
-    # job.run()
-    # print(f'Finished starting the first run')
+    if args.run:
+        print(f'Starting the first run immediately')
+        job.run()
+        print(f'Finished starting the first run')
