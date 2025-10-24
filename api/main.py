@@ -7,6 +7,8 @@ from pathlib import Path
 from src.api import DataApi
 from sibr_api import RateLimitError
 from sibr_module import Logger
+from google.cloud import bigquery
+from google.cloud import firestore
 
 load_dotenv()
 
@@ -122,21 +124,31 @@ if __name__ == "__main__":
 
         if args.task in ["statens-vegvesen","all"]:
             #STATENS VEGVESEN har en request limit på 50.000 request pr dag
+            bq_client = bigquery.Client()
+            db = firestore.Client(project="sibr-market", database="backend")
             if not args.limit:
                 limit = 50000
             else:
                 limit = args.limit
+
+            fetched_ids = db.collection("statens_vegvesen").list_documents()
+            fetched_ids = [doc.id for doc in fetched_ids]
+            logger.info(f'Already fetched {len(fetched_ids)} items from Statens Vegvesen API')
             query = """
                     SELECT item_id, reg_num
                     FROM clean.cars c
-                    WHERE NOT EXISTS (SELECT 1
-                                      FROM `sibr-market.staging.statens_vegvesen` s
-                                      WHERE s.item_id = c.item_id)
-                      AND reg_num IS NOT NULL 
+                    WHERE c.item_id NOT IN UNNEST(@fetched_ids)
+                        AND reg_num IS NOT NULL 
                     """
             if limit:
                 query += f'\nLIMIT {limit}'
-            cars = api.bq.read_bq(query)
+            params = [
+                bigquery.ArrayQueryParameter(
+                    "fetched_ids", "STRING", fetched_ids
+                )
+            ]
+            
+            cars = bq_client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params)).to_dataframe()
             cars.set_index("item_id", inplace=True)
             cars_input = cars["reg_num"].to_dict()
             try:
