@@ -98,8 +98,8 @@ class NewHomeSpider(FinnBaseSpider):
         # ================= PRICE =================
         item['price'] = response.css('div[data-testid="pricing-incicative-price"] span.text-28.font-bold::text').get()
         item['total_price'] = response.css('div[data-testid="pricing-total-price"] dd::text').get()
-        item['fees'] = response.css('div[data-testid="pricing-registration-charge"] dd::text').get()
-        item['joint_debt'] = response.css('div[data-testid="pricing-joint-debt"] dd::text').get()
+        item['fees'] = response.css('div[data-testid="pricing-sales-cost-sum"] dd::text').get()
+        item['joint_debt'] = response.css('div[data-testid="pricing-collective-debt"] dd::text').get()
         item['monthly_common_cost'] = response.css('div[data-testid="pricing-common-monthly-cost"] dd::text').get()
         item['collective_assets'] = response.css('div[data-testid="pricing-collective-assets"] dd::text').get()
         item['tax_value'] = response.css('div[data-testid="pricing-tax-value"] dd::text').get()

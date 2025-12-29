@@ -215,6 +215,7 @@ class BoatItem(FinnItem):
     sleeping_places = Field() #ok
     color = Field() #ok
     reg_num = Field() #ok
+    weight = Field() #ok
 
 
 class MCItem(FinnItem):

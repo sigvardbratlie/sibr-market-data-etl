@@ -18,7 +18,6 @@ steps:
     fi
 
 #======== BUILD AND PUSH CONTAINERS
-
 # =========== SCRAPER ================
 - name: 'gcr.io/cloud-builders/docker'
   id: 'build-scraping'

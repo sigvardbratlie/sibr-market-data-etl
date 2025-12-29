@@ -145,6 +145,7 @@ class BoatSpider(FinnBaseSpider):
             "sleeping_places": "Soveplasser",  # ok,
             "color": "Farge",  # ok
             "reg_num": "Registreringsnummer",  # ok
+            "weight": "Vekt",  # ok
         }
         for field, label in boat_details.items():
             if response.css(f'dt:contains("{label}") + dd::text').get():

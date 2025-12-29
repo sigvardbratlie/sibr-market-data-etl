@@ -125,9 +125,9 @@ class JobSpider(FinnBaseSpider):
 
         item['contact_title'] = self.get_all_info(response,'Stillingstittel') or self.get_info_dt(response,'Stillingstittel')
         item['subtitle'] = response.css('h2.t2.md\\:t1 + p::text').get()
-        item['employer'] = response.css('dt:contains("Arbeidsgiver") + dd::text').get() or response.css('h2.t2.md\\:t1 + p::text').get()
+        item['employer'] =  response.css('dt:contains("Arbeidsgiver") + dd::text').get() or response.css('h2.t2.md\\:t1 + p::text').get()
         item['about_employer'] = response.css('div.import-decoration::text').getall()
-        item['sector'] = self.get_info(response,'Sektor') or response.css('dt:contains("Sektor") + dd::text').get()
+        item['sector'] = response.xpath("//li//span[contains(@class, 'font-bold') and contains(., 'Sektor')]/following::text()[normalize-space()][1]").get()
         item['industry'] = self.get_all_info(response,'Bransje') or response.css('dt:contains("Bransje") + dd::text').getall()
         item['job_function'] = (response.css(f"ul.space-y-10 li span.pr-8.font-bold:contains('Stillingsfunksjon:') ~ a::text").getall()
                                 or self.get_info(response,'Stillingsfunksjon') or
@@ -136,9 +136,9 @@ class JobSpider(FinnBaseSpider):
         item['employment_type'] = self.get_info(response, 'Ansettelsesform') or response.css('dt:contains("Ansettelsesform") + dd::text').get() or response.css(f"ul.grid li.flex.flex-col:contains('Ansettelsesform') span.font-bold::text").get()
 
         item['positions_available'] = self.get_info(response,'Antall stillinger') or response.css('dt:contains("Antall stillinger") + dd::text').get()
-        item['work_language'] = self.get_info(response,'Arbeidsspråk') or response.css('dt:contains("Arbeidsspråk") + dd::text').get()
-        item['remote_work'] = response.css('span.pr-8.font-bold:contains("Hjemmekontor") ~ a::text').get() or response.css('dt:contains("Hjemmekontor") + dd::text').get()
-        item['location'] = self.get_info(response,'Sted') or response.css('dt:contains("Sted") + dd::text').get()
+        item['work_language'] = response.xpath("//li//span[contains(@class, 'font-bold') and contains(., 'Arbeidsspråk')]/following::text()[normalize-space()][1]").get()
+        item['remote_work'] = response.xpath("//li//span[contains(@class, 'font-bold') and contains(., 'Hjemmekontor')]/following::text()[normalize-space()][1]").get()
+        item['location'] = item['location'] = response.xpath("//li[.//span[contains(., 'Sted')]]/text()[normalize-space()]").getall()
         item['keywords'] = response.css('h2.t3:contains("Nøkkelord") + p::text').get()
 
         yield item
