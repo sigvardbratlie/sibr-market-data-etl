@@ -1,0 +1,54 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "sigvardbratlie", email = "sigvard.bratlie@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.13.3",
+    "bigframes>=2.35.0",
+    "charset-normalizer>=3.4.4",
+    "db-dtypes>=1.5.0",
+    "frozenlist>=1.8.0",
+    "gcsfs>=2025.12.0",
+    "geopandas>=1.1.2",
+    "google-api-core>=2.29.0",
+    "google-auth>=2.48.0",
+    "google-auth-oauthlib>=1.2.4",
+    "google-cloud>=0.34.0",
+    "google-cloud-appengine-logging>=1.8.0",
+    "google-cloud-audit-log>=0.4.0",
+    "google-cloud-bigquery>=3.40.0",
+    "google-cloud-bigquery-connection>=1.20.0",
+    "google-cloud-bigquery-storage>=2.36.0",
+    "google-cloud-core>=2.5.0",
+    "google-cloud-firestore>=2.23.0",
+    "google-cloud-functions>=1.22.0",
+    "google-cloud-iam>=2.21.0",
+    "google-cloud-logging>=3.13.0",
+    "google-cloud-resource-manager>=1.16.0",
+    "google-cloud-secret-manager>=2.26.0",
+    "google-cloud-storage>=3.9.0",
+    "google-crc32c>=1.8.0",
+    "grpcio>=1.78.0",
+    "humanize>=4.15.0",
+    "numpy>=2.4.2",
+    "pandas>=2.3.3",
+    "pandas-gbq>=0.29.2",
+    "pillow>=12.1.0",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    "shapely>=2.1.2",
+    "sibr-api>=0.3.2",
+    "sibr-module[all,bigquery,secrets]>=0.2.11",
+]
+
+[project.scripts]
+api = "api:main"
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"

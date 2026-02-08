@@ -1,0 +1,23 @@
+[project]
+name = "pipelines"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "sigvardbratlie", email = "sigvard.bratlie@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "google-cloud-aiplatform>=1.136.0",
+    "google-cloud-storage>=3.9.0",
+    "kfp>=2.15.2",
+    "python-dotenv>=1.2.1",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+pipelines = "pipelines:main"
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"

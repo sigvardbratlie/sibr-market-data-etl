@@ -1,0 +1,46 @@
+[project]
+name = "scraping"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "sigvardbratlie", email = "sigvard.bratlie@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "google-api-core>=2.29.0",
+    "google-auth>=2.48.0",
+    "google-cloud-appengine-logging>=1.8.0",
+    "google-cloud-audit-log>=0.4.0",
+    "google-cloud-bigquery>=3.40.0",
+    "google-cloud-core>=2.5.0",
+    "google-cloud-logging>=3.13.0",
+    "google-crc32c>=1.8.0",
+    "grpcio>=1.78.0",
+    "itemadapter>=0.13.1",
+    "itemloaders>=1.4.0",
+    "lxml>=6.0.2",
+    "nbconvert>=7.17.0",
+    "nest-asyncio>=1.6.0",
+    "numpy>=2.4.2",
+    "pandas>=2.3.3",
+    "playwright>=1.58.0",
+    "pyarrow>=21.0.0",
+    "pyopenssl>=25.3.0",
+    "pytest>=9.0.2",
+    "python-dotenv>=1.2.1",
+    "referencing>=0.37.0",
+    "requests>=2.32.5",
+    "scrapy>=2.14.1",
+    "scrapy-playwright>=0.0.46",
+    "twisted>=25.5.0",
+    "urllib3>=2.6.3",
+]
+
+[project.scripts]
+scraping = "scraping:main"
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
