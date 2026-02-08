@@ -7,8 +7,8 @@ import asyncio
 
 
 @pytest.fixture(scope='module',params=[
-                                        'https://www.finn.no/realestate/homes/ad.html?finnkode=409631696',
-                                       'https://www.finn.no/realestate/homes/ad.html?finnkode=409687343',
+                                        'https://www.finn.no/realestate/homes/ad.html?finnkode=449785185',
+                                       'https://www.finn.no/realestate/homes/ad.html?finnkode=449636139',
                                         ])
 def test_state(request):
     url = request.param

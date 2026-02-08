@@ -7,9 +7,8 @@ import asyncio
 
 
 @pytest.fixture(scope='module',params=[
-                                        # 'https://www.finn.no/mobility/item/391416358',
-                                       'https://www.finn.no/mobility/item/409055096',
-                                       # 'https://www.finn.no/mobility/item/390764240'
+                                        "https://www.finn.no/mobility/item/450082809",
+                                        "https://www.finn.no/mobility/item/450051394"
                                         ])
 def test_state(request):
     url = request.param
@@ -39,16 +38,16 @@ def test_total_price(test_state):
     assert test_state['total_price'], 'Total price should present'
 
 def test_year(test_state):
-    assert len(test_state['year']) == 4, 'Year should be a 4 digit number'
+    assert len(test_state['model_year']) == 4, 'Year should be a 4 digit number'
 
-def test_milage(test_state):
+def test_mileage(test_state):
     assert 'km' in test_state['mileage'], 'Milage should be in kilometers'
 
 def test_gearbox(test_state):
     assert test_state['gearbox'] in ['Automat', 'Manuell'], 'Gearbox should be either Automat or Manuell'
 
 def test_fuel_type(test_state):
-    assert test_state['fuel_type'], 'Fuel type should be present'
+    assert test_state['fuel'], 'Fuel type should be present'
 
 def test_description(test_state):
     assert test_state['description'], 'Description should be present'

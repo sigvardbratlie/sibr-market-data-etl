@@ -8,9 +8,8 @@ import asyncio
 
 
 @pytest.fixture(scope='module',params=[
-                                        'https://www.finn.no/realestate/project/ad.html?finnkode=293962961',
-                                       'https://www.finn.no/realestate/project/ad.html?finnkode=402303414',
-                                        'https://www.finn.no/realestate/projectunit/ad.html?finnkode=402306776',
+                                        'https://www.finn.no/realestate/project/ad.html?finnkode=296992196',
+                                        "https://www.finn.no/realestate/planned/ad.html?finnkode=445120619"
                                         ])
 def test_state(request): # 'request' her er pytest sin fixture request, ikke Scrapy Request
     url = request.param
