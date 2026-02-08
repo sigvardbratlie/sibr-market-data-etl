@@ -149,42 +149,7 @@ async def main():
                             raise
 
                         logger.info(f'➡️ Input from batch kartverket API to data cleaning: {len(df)} with transfer type {transfer_type} and ownership type {ownership_type}')
-                        # for col in request_cols:
-                        #     if df[col].dtype != db[col].dtype:
-                        #         logger.warning(f'Column {col} has different data types in db and df. `df` has dtype {df[col].dtype} and `db` has dtype {db[col].dtype}. Forcing both to int')
-                        #         df[col] = df[col].astype(int) #FRAME
-                        #         db[col] = db[col].astype(int) #BASE
-                        # m = pd.merge(df, db.reset_index(), on=request_cols, how="left")
-                        # view = m.drop(columns=['omsetning_oppdateringsdato_timestamp',
-                        #                        'omsetning_dokumentavgift_beloepstekst',
-                        #                        'omsetning_omsatteregisterenhetsretter_item',
-                        #                        'omsetning_avsluttetav',
-                        #                        'anmerketavids_materialised',
-                        #                        'tekster',
-                        #                        'omsetning_omsetningstypeid_value',
-                        #                        'aarsakgebyrfritakid_value',
-                        #                        'omsetning_vederlag_valutakodeid',
-                        #                        'oppdatertav',
-                        #                        'sluttdato',
-                        #                        'endretavids_materialised',
-                        #                        'omsetning_sluttdato',
-                        #                        'anmerketavids_cachedvalue_item',
-                        #                        'oppdateringsdato_timestamp',
-                        #                        'heftelseiannenrettids_materialised',
-                        #                        'omsetning_dokumentavgift_valutakodeid',
-                        #                        'endretavids_cachedvalue_item',
-                        #                        'tekster_item',
-                        #                        'omsetning_dokumentavgiftsaarsakid_value',
-                        #                        'omsetning_dokumentavgiftsgrunnlag_beloepstekst',
-                        #                        'omsetning_vederlag_beloepstekst',
-                        #                        'avsluttetav',
-                        #                        'omsetning_dokumentavgiftsgrunnlag_valutakodeid',
-                        #                        'heftelseiannenrettids_cachedvalue_item'],
-                        #                 errors="ignore")
-                        #
-                        # view.drop(columns=request_cols, inplace=True)
-                        # view["active"] = transfer_type == "active"
-                        # view["get_date"] = pd.Timestamp.now()
+                        
                         view = api.trim_output(df = df, db=db, request_cols=request_cols,transfer_type=transfer_type)
                         logger.info(f'⬅️  Output from data cleaning: {len(view)}')
                         if args.save:

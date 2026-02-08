@@ -197,6 +197,12 @@ class Clean(SibrBase):
         if not isinstance(x, str):
             return None
         x = x.replace('\u202f', ' ')
+        # Abbreviated Norwegian months (simple string replace before regex)
+        nor_abbrev = {
+            'jan.': 'Jan', 'feb.': 'Feb', 'mar.': 'Mar', 'apr.': 'Apr',
+            'mai.': 'May', 'jun.': 'Jun', 'jul.': 'Jul', 'aug.': 'Aug',
+            'sep.': 'Sep', 'okt.': 'Oct', 'nov.': 'Nov', 'des.': 'Dec',
+        }
         nor_to_eng = {
             'januar': 'January',
             'februar': 'February',
@@ -211,7 +217,9 @@ class Clean(SibrBase):
             'november': 'November',
             'desember': 'December',
         }
-        x_trans = x
+        x_trans = x.lower()
+        for nor, eng in nor_abbrev.items():
+            x_trans = x_trans.replace(nor, eng)
         for nor, eng in nor_to_eng.items():
             x_trans = re.sub(r'\b' + re.escape(nor) + r'\b', eng, x_trans, flags=re.IGNORECASE)
         try:
@@ -465,7 +473,8 @@ class Clean(SibrBase):
         df = self.mk_num(df, int_cols,type='int')
         #df = self.mk_num(df, float_cols,type='float')
 
-        df['transfer_fee'] = df['transfer_fee'].fillna(0)
+        if "transfer_fee" in df.columns:
+            df['transfer_fee'] = df['transfer_fee'].fillna(0)
 
         df = df[
             (df['total_price'] > 10000) & (df['total_price'] < 3000000)
@@ -635,7 +644,8 @@ class Clean(SibrBase):
 
         trouble_columns = ["last_eu","next_eu"]
         for col in trouble_columns:
-            df[col] = df[col].astype(str)
+            if col in df.columns:
+                df[col] = df[col].astype(str)
 
         self.logger.debug(f'Length: {len(df)} | before saving to BQ. Replace {self.replace}')
         self.df = df
@@ -835,11 +845,11 @@ class Clean(SibrBase):
         self.logger.debug(f'Length: {len(df)} | after filter price and usable_area')
 
         # Datetime Data
-        df.loc[:, 'scrape_date'] = pd.to_datetime(df['scrape_date'], errors='coerce', utc=True)
+        df['scrape_date'] = pd.to_datetime(df['scrape_date'], errors='coerce', utc=True)
         df['clean_date'] = pd.Timestamp.now()
         self.logger.debug(f'Length: {len(df)} | after datetime conversion')
 
-        df.loc[:, 'postal_code'] = df['address'].apply(self.extract_postnummer)
+        df['postal_code'] = df['address'].apply(self.extract_postnummer)
         df = pd.merge(df, self.geo[['postal_code', 'municipality', 'county', 'region']], how='left', on='postal_code')
         self.logger.debug(f'Length: {len(df)} | after geo')
         # ## Categorical Data
@@ -1398,6 +1408,9 @@ class Clean(SibrBase):
         df_r = self.mk_cat(df_r, 'property_type', prop_type)
         df_r = pd.get_dummies(df_r, columns=['property_type'], drop_first=True)
         self.logger.debug(f'Length of df_r: {len(df_r)} | Before saving to BQ. Replace is {self.replace}')
+        if "pre_processed_date" not in df_r.columns:
+            df_r['pre_processed_date'] = pd.Timestamp.now()
+
         if save_to_bq:
             self.save_data(df = df_r, table_name = 'rentals')
         # ## Co-living rentals

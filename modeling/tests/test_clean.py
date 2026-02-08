@@ -1,13 +1,11 @@
 import pytest
-import os
-os.chdir('..')
-from src.sibr_market_training import Clean
 import pandas as pd
 
+
 @pytest.fixture
-def instance():
+def instance(make_clean_instance):
     """Fixture to create a Clean instance for testing."""
-    return Clean(dataset='cars')
+    return make_clean_instance('cars')
 
 
 def test_clean_init(instance):
