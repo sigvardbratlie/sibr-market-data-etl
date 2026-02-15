@@ -47,7 +47,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 
 # Set up environment variables
-cp .env.example .env  # Edit with your values
 
 # Install Playwright browsers (for scraping)
 playwright install chromium
