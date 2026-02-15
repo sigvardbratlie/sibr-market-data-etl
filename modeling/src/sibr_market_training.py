@@ -17,7 +17,7 @@ import sklearn
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV,train_test_split
-from src.helper_modules import CustomBigQuery
+from .helper_modules import CustomBigQuery
 from dateutil import parser
 
 class SibrBase:
@@ -1098,7 +1098,7 @@ class Clean(SibrBase):
         df_el = self.rm_nan_cols(df_el)
         self.logger.debug(f'Length of df_el: {len(df_el)} | before saving to BQ. Replace is {self.replace}')
 
-        if save_to_bq:
+        if save_to_bq and not df_el.empty:
             self.save_data(df=df_el,
                            table_name=f'{self.dataset}_el')
 
@@ -1107,7 +1107,7 @@ class Clean(SibrBase):
         df_fossil = self.rm_nan_cols(df_fossil)
         self.logger.debug(f'Length of df_fossil: {len(df_fossil)} | Before saving to BQ. Replace is {self.replace}')
 
-        if save_to_bq:
+        if save_to_bq and not df_fossil.empty:
             self.save_data(df=df_fossil,
                            table_name=f'{self.dataset}_fossil',
                            explicit_schema = {"range" : "INT"})
