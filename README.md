@@ -56,7 +56,7 @@ playwright install chromium
 
 | Variable | Description |
 |----------|-------------|
-| `GOOGLE_APPLICATION_CREDENTIALS_FILENAME` | Path to GCP service account key |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP service account key |
 | `PROJECT_ID` | GCP project ID (`sibr-market`) |
 | `REGION` | GCP region (`europe-west1`) |
 | `GRUNNBOK_USERNAME` | Kartverket API username |
