@@ -5,8 +5,8 @@ from typing import Literal
 
 class CustomBigQuery(BigQuery):
 
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def read_raw(self, dataset: str = None, replace=False, limit=None, ) -> pd.DataFrame:
         if not dataset:
@@ -112,31 +112,25 @@ class CustomBigQuery(BigQuery):
         if random_sample and limit:
             raise ValueError("Du kan ikke bruke både 'random_sample' og 'limit' samtidig.")
 
-        # 1. Grunnleggende SELECT- og FROM-deler
         select_clauses = ["a.*"]
         from_clause = f"FROM `sibr-market.pre_processed.{table}` a"
         join_clauses = []
         where_clauses = []
 
-        # 2. Håndter 'coordinates'-parameteren
         if coordinates:
             select_clauses.extend(["c.lat", "c.lng"])
             join_clauses.append("JOIN admin.coordinates c ON c.item_id = a.item_id")
             where_clauses.append("c.lat != 0")
 
-        # 3. Håndter 'municipality'-parameteren
         if municipality:
             municipality_lower = municipality.lower()
-            # Denne joinen er uavhengig av om vi henter koordinater eller ikke
             join_clauses.append(f"JOIN clean.{self.dataset} cl ON cl.item_id = a.item_id")
             where_clauses.append(f"LOWER(cl.municipality) = '{municipality_lower}'")
 
-        # 4. Håndter 'last_scrape_date'-parameteren
         if last_scrape_date:
             where_clauses.append(
                 f"DATE(a.year, a.month, a.day) = (SELECT MAX(scrape_date) FROM sibr-market.raw.{self.dataset})")
 
-        # --- Sett sammen den endelige spørringen ---
         sql = f"SELECT {', '.join(select_clauses)} {from_clause}"
 
         if join_clauses:
@@ -252,21 +246,17 @@ class CustomBigQuery(BigQuery):
                 df = df[important_columns].copy()
             if "item_id" in df.columns:
                 df.set_index('item_id', inplace=True)
-            # else:
-            #     logger.warning(f"no item_id in dataframe {df.columns}")
             if 'internal_area' in df.columns:
                 df['ref_price'] = df.apply(lambda row: row['ref_price_pr_i_sqm'] * row['internal_area'], axis=1)
             elif 'usable_area' in df.columns:
                 df['ref_price'] = df.apply(lambda row: row['ref_price_pr_i_sqm'] * row['usable_area'], axis=1)
             else:
                 self.logger.warning(f'Missing usable or internal area: {df.columns}')
-            # df['fees'] = df['ref_price'] * 0.025
             df.drop(columns=['pre_processed_date'], errors='ignore', inplace=True)
             return df
 
-        def read_data(dataset_name, limit: int = None, random_samples=None, unimportant_columns=None, last_scrape=False,
-                      debug_query=False):
-
+        def read_data(dataset_name, limit: int = None, random_samples=None, unimportant_columns=None,
+                      last_scrape=False, debug_query=False):
             df = read_query(dataset_name=dataset_name, limit=limit, random_samples=random_samples,
                             last_scrape=last_scrape, debug_query=debug_query)
             df = prep_data(df, unimportant_columns=unimportant_columns)
@@ -274,7 +264,6 @@ class CustomBigQuery(BigQuery):
 
         def read_data_oslo(unimportant_columns: list, limit=None, random_samples=None, last_scrape=False,
                            debug_query=debug_query):
-
             if random_samples and last_scrape:
                 raise ValueError(
                     "Only one of the following two can be True at the same time: random_samples and last_scrape")
@@ -336,23 +325,14 @@ class CustomBigQuery(BigQuery):
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
             return {'homes': df}
         elif task == "train":
-            df_a = read_data('homes_apartments',
-                             limit=limit,
-                             random_samples=random_samples,
-                             last_scrape=last_scrape,
-                             unimportant_columns=unimportant_columns,
+            df_a = read_data('homes_apartments', limit=limit, random_samples=random_samples,
+                             last_scrape=last_scrape, unimportant_columns=unimportant_columns,
                              debug_query=debug_query)
-            df_h = read_data('homes_houses',
-                             limit=limit,
-                             random_samples=random_samples,
-                             last_scrape=last_scrape,
-                             unimportant_columns=unimportant_columns,
+            df_h = read_data('homes_houses', limit=limit, random_samples=random_samples,
+                             last_scrape=last_scrape, unimportant_columns=unimportant_columns,
                              debug_query=debug_query)
-            df_o = read_data_oslo(limit=limit,
-                                  random_samples=random_samples,
-                                  last_scrape=last_scrape,
-                                  unimportant_columns=unimportant_columns,
-                                  debug_query=debug_query)
+            df_o = read_data_oslo(limit=limit, random_samples=random_samples, last_scrape=last_scrape,
+                                  unimportant_columns=unimportant_columns, debug_query=debug_query)
 
             if df_a.empty or df_h.empty or df_o.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
@@ -361,23 +341,14 @@ class CustomBigQuery(BigQuery):
             last_scrape = True
             random_samples = None
             limit = None
-            df_a = read_data('homes_apartments',
-                             limit=limit,
-                             random_samples=random_samples,
-                             last_scrape=last_scrape,
-                             unimportant_columns=unimportant_columns,
+            df_a = read_data('homes_apartments', limit=limit, random_samples=random_samples,
+                             last_scrape=last_scrape, unimportant_columns=unimportant_columns,
                              debug_query=debug_query)
-            df_h = read_data('homes_houses',
-                             limit=limit,
-                             random_samples=random_samples,
-                             last_scrape=last_scrape,
-                             unimportant_columns=unimportant_columns,
+            df_h = read_data('homes_houses', limit=limit, random_samples=random_samples,
+                             last_scrape=last_scrape, unimportant_columns=unimportant_columns,
                              debug_query=debug_query)
-            df_o = read_data_oslo(limit=limit,
-                                  random_samples=random_samples,
-                                  last_scrape=last_scrape,
-                                  unimportant_columns=unimportant_columns,
-                                  debug_query=debug_query)
+            df_o = read_data_oslo(limit=limit, random_samples=random_samples, last_scrape=last_scrape,
+                                  unimportant_columns=unimportant_columns, debug_query=debug_query)
             query = """
                     WITH OsloHomesRentals AS (SELECT h.*, \
                                                      go.BYDELSNAVN AS district_geo \
@@ -401,7 +372,7 @@ class CustomBigQuery(BigQuery):
                     WHERE DATE (a.year \
                         , a.month \
                         , a.day) = (SELECT MAX(scrape_date) FROM sibr-market.raw.homes)
-                        , 
+                        ,
                     """
             df_r = self.read_bq(query=query)
             df_r = prep_data(df_r, unimportant_columns=unimportant_columns)
@@ -461,23 +432,18 @@ class CustomBigQuery(BigQuery):
                 df = df[important_columns].copy()
             if "item_id" in df.columns:
                 df.set_index('item_id', inplace=True)
-            # else:
-            #     logger.warning(f"no item_id in dataframe {df.columns}")
             if 'primary_area' in df.columns:
                 df['ref_rent'] = df.apply(lambda row: row['ref_rent_pr_sqm'] * row['primary_area'], axis=1)
             elif 'bedrooms' in df.columns:
                 df['ref_rent'] = df.apply(lambda row: row['ref_rent_pr_sqm'] * row['bedrooms'], axis=1)
-            # else:
-            #     self.logger.warning(f'Missing both primary_area and bedrooms in dataframe: {df.columns}')
             if drop_hybel:
                 df = df[df["property_type_hybel"] != True]
                 df.drop(columns=["dealer_True"], errors="ignore", inplace=True)
             df.drop(columns=['pre_processed_date'], errors='ignore', inplace=True)
             return df
 
-        def read_data(dataset_name, limit: int = None, random_samples=None, unimportant_columns=None, last_scrape=False,
-                      drop_hybel=False, debug_query=debug_query):
-
+        def read_data(dataset_name, limit: int = None, random_samples=None, unimportant_columns=None,
+                      last_scrape=False, drop_hybel=False, debug_query=debug_query):
             df = read_query(dataset_name=dataset_name, limit=limit, random_samples=random_samples,
                             last_scrape=last_scrape, debug_query=debug_query)
             df = prep_data(df, unimportant_columns=unimportant_columns, drop_hybel=drop_hybel)
@@ -485,7 +451,6 @@ class CustomBigQuery(BigQuery):
 
         def read_data_oslo(query, unimportant_columns: list = [], limit=None, random_samples=None, last_scrape=False,
                            drop_hybel=False, debug_query=debug_query):
-
             if random_samples and last_scrape:
                 raise ValueError(
                     "Only one of the following two can be True at the same time: random_samples and last_scrape")
@@ -505,19 +470,19 @@ class CustomBigQuery(BigQuery):
             return df_o
 
         query_co_living = """
-                          WITH OsloRentals AS 
-                                   (SELECT 
-                                        h.*, 
-                                        go.BYDELSNAVN AS district_geo 
-                                    FROM `sibr-market.clean.rentals` h 
+                          WITH OsloRentals AS
+                                   (SELECT
+                                        h.*,
+                                        go.BYDELSNAVN AS district_geo
+                                    FROM `sibr-market.clean.rentals` h
                                     LEFT JOIN `sibr-market.admin.geo_oslo` go
                                       ON go.postnummer = h.postal_code
                                       WHERE LOWER (h.municipality) = 'oslo'
                                           )
-                          SELECT a.*, 
-                                 d.monthly_rent AS ref_rent, 
-                                 c.lat, 
-                                 c.lng, 
+                          SELECT a.*,
+                                 d.monthly_rent AS ref_rent,
+                                 c.lat,
+                                 c.lng,
                                  go.BYDELSNAVN  AS district_name
                           FROM `sibr-market.pre_processed.rentals_co-living` a
                                JOIN OsloRentals h ON h.item_id = a.item_id
@@ -532,7 +497,7 @@ class CustomBigQuery(BigQuery):
         WITH OsloRentals AS (
         SELECT
             h.*,
-            go.BYDELSNAVN AS district_geo  
+            go.BYDELSNAVN AS district_geo
         FROM `sibr-market.clean.rentals` h
         LEFT JOIN `sibr-market.admin.geo_oslo` go ON go.postnummer = h.postal_code
         WHERE LOWER(h.municipality) = 'oslo'
@@ -568,21 +533,12 @@ class CustomBigQuery(BigQuery):
             return {'rentals': df}
 
         elif task == "train":
-            df_a = read_data('rentals',
-                             unimportant_columns=unimportant_columns,
-                             limit=limit,
-                             random_samples=random_samples,
-                             last_scrape=last_scrape)
-            df_co = read_data_oslo(query=query_co_living,
-                                   unimportant_columns=unimportant_columns,
-                                   limit=limit,
-                                   random_samples=random_samples,
-                                   last_scrape=last_scrape)
-            df_o = read_data_oslo(query=query_oslo,
-                                  unimportant_columns=unimportant_columns,
-                                  limit=limit,
-                                  random_samples=random_samples,
-                                  last_scrape=last_scrape)
+            df_a = read_data('rentals', unimportant_columns=unimportant_columns, limit=limit,
+                             random_samples=random_samples, last_scrape=last_scrape)
+            df_co = read_data_oslo(query=query_co_living, unimportant_columns=unimportant_columns,
+                                   limit=limit, random_samples=random_samples, last_scrape=last_scrape)
+            df_o = read_data_oslo(query=query_oslo, unimportant_columns=unimportant_columns,
+                                  limit=limit, random_samples=random_samples, last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
             self.logger.info(
@@ -591,20 +547,12 @@ class CustomBigQuery(BigQuery):
 
         elif task == "predict":
             last_scrape = True
-            df_a = read_data('rentals',
-                             unimportant_columns=unimportant_columns,
-                             limit=limit, random_samples=random_samples,
-                             last_scrape=last_scrape)
-            df_co = read_data_oslo(query=query_co_living,
-                                   unimportant_columns=unimportant_columns,
-                                   limit=limit,
-                                   random_samples=random_samples,
-                                   last_scrape=last_scrape)
-            df_o = read_data_oslo(query=query_oslo,
-                                  unimportant_columns=unimportant_columns,
-                                  limit=limit,
-                                  random_samples=random_samples,
-                                  last_scrape=last_scrape)
+            df_a = read_data('rentals', unimportant_columns=unimportant_columns, limit=limit,
+                             random_samples=random_samples, last_scrape=last_scrape)
+            df_co = read_data_oslo(query=query_co_living, unimportant_columns=unimportant_columns,
+                                   limit=limit, random_samples=random_samples, last_scrape=last_scrape)
+            df_o = read_data_oslo(query=query_oslo, unimportant_columns=unimportant_columns,
+                                  limit=limit, random_samples=random_samples, last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
             self.logger.info(

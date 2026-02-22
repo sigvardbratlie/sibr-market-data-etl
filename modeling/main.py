@@ -1,10 +1,19 @@
 import argparse
 import os
 from pathlib import Path
-from src.sibr_market_training import Clean, Train, Predict
+from src.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
+from src.training import Train
+from src.predictions import Predict
 from sibr_module import Logger
 import logging
 from dotenv import load_dotenv
+
+CLEANER_MAP = {
+    'cars': CarsCleaner,
+    'homes': HomesCleaner,
+    'rentals': RentalsCleaner,
+    'new_homes': NewHomesCleaner,
+}
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
@@ -54,7 +63,7 @@ def main():
     def run_cleaning_pipeline(dataset: str, save_to_bq: bool, replace: bool):
         """Kjører rense- og preprosesseringssteg for et gitt datasett."""
         logger.info(f"--- Running cleaning pipeline for dataset: {dataset} ---")
-        cleaner = Clean(dataset=dataset,logger = logger)
+        cleaner = CLEANER_MAP[dataset](logger=logger)
 
         # Kjør rensing
         # La df være None hvis det feiler, eller en DataFrame hvis det lykkes
@@ -129,7 +138,7 @@ def main():
 
         logger.info(f"=== Running task '{args.task}' for dataset '{args.dataset}' ===")
         if args.task in ['clean', 'pre_processed']:
-            cleaner = Clean(dataset=args.dataset, logger=logger)
+            cleaner = CLEANER_MAP[args.dataset](logger=logger)
             cleaner.run(task=args.task, save_to_bq=save_to_bq, replace=args.replace)
         elif args.task == 'train':
             train = Train(dataset=args.dataset, logger=logger)
