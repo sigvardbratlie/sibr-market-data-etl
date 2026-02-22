@@ -103,4 +103,6 @@ examples/
 
 *.DS_Store
 
+*ipynb
+
 
