@@ -8,7 +8,15 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.sibr_market_training import Clean, SibrBase
+from src.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
+from src.base import SibrBase
+
+_CLEANER_MAP = {
+    'cars': CarsCleaner,
+    'homes': HomesCleaner,
+    'rentals': RentalsCleaner,
+    'new_homes': NewHomesCleaner,
+}
 
 
 GEO_DATA = pd.DataFrame({
@@ -43,10 +51,11 @@ GEO_DATA = pd.DataFrame({
 })
 
 
-def _make_clean_instance(dataset: str) -> Clean:
-    """Create a Clean instance with mocked external dependencies (no GCP calls)."""
+def _make_clean_instance(dataset: str):
+    """Create a cleaner instance with mocked external dependencies (no GCP calls)."""
+    CleanerClass = _CLEANER_MAP[dataset]
     with patch.object(SibrBase, 'setup'):
-        instance = Clean(dataset=dataset, logger=MagicMock())
+        instance = CleanerClass(logger=MagicMock())
     instance.geo = GEO_DATA.copy()
     return instance
 

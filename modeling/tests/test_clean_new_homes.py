@@ -14,8 +14,7 @@ def instance(make_clean_instance):
 
 @pytest.fixture
 def cleaned_df(instance):
-    # new_homes is cleaned via clean_homes()
-    return instance.clean_homes()
+    return instance.clean()
 
 
 class TestCleanNewHomesStructure:

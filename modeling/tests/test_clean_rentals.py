@@ -13,7 +13,7 @@ def instance(make_clean_instance):
 
 @pytest.fixture
 def cleaned_df(instance):
-    return instance.clean_rentals()
+    return instance.clean()
 
 
 class TestCleanRentalsStructure:
