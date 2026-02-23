@@ -1,33 +1,26 @@
-from sibr_module import BigQuery, SecretsManager
+from sibr_module import BigQuery
 import asyncio
 import pandas as pd
 from urllib.parse import quote_plus
 from sibr_api import ApiBase,NotFoundError,RateLimitError
-from google.cloud import firestore
+from google.cloud import firestore,secretmanager
 from concurrent.futures import ThreadPoolExecutor
 
-
-# import aiohttp
-# import os
-# import logging
-# from http.client import responses
-#from src.settings import GOOGLE_CLOUD_PROJECT
-# import json
-# import abc
-# from dotenv import load_dotenv
-# import inspect
-# from typing import Literal
 
 class DataApi(ApiBase):
     def __init__(self, logger = None):
         super().__init__(logger_name='nominatim', logger = logger)
         self.bq = BigQuery(project_id = "sibr-market", logger = logger)
-        secret = SecretsManager(project_id="sibr-market")
-        self.sv_api_key = secret.get_secret("STATENS_VEGVESEN_API_KEY")
+        self.sv_api_key = self._get_secret("STATENS_VEGVESEN_API_KEY")
         self.db = firestore.Client(project="sibr-market", database="backend")
 
     # ===== COMMON GEOCODING FUNCTIONS =====
-
+    def _get_secret(self, secret_name):
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/sibr-market/secrets/{secret_name}/versions/latest"
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    
     def _encode_address(self, address):
 
         if "/" in address:

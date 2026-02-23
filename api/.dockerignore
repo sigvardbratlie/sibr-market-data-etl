@@ -33,6 +33,10 @@ data/      # Hvis du lagrer skrapet data i en 'data/' mappe lokalt
 output/    # Generiske utdatamapper
 results/   # Andre resultatmapper
 
+# Secrets / lokale env-filer (skal aldri inn i image)
+.env
+.env.*
+
 # Midlertidige filer
 *.tmp
 *~

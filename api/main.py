@@ -132,7 +132,7 @@ if __name__ == "__main__":
                     SELECT item_id, reg_num
                     FROM clean.cars c
                     WHERE c.item_id NOT IN UNNEST(@fetched_ids)
-                        AND reg_num IS NOT NULL 
+                        AND reg_num IS NOT NULL
                     """
             if limit:
                 query += f'\nLIMIT {limit}'
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                     "fetched_ids", "STRING", fetched_ids
                 )
             ]
-            
+
             cars = bq_client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params)).to_dataframe()
             cars.set_index("item_id", inplace=True)
             cars_input = cars["reg_num"].to_dict()

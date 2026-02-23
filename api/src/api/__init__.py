@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from api!")
+from .api import DataApi
+
+__all__ = ["DataApi"]
