@@ -119,7 +119,7 @@ def create_pipeline(
     # clean_predict_task.set_caching_options(False)
 
 if __name__ == '__main__':
-    PIPELINE_JSON = 'sibr_market_pipeline.json'
+    PIPELINE_JSON = 'sibr-market-pipeline.json'
     compiler.Compiler().compile(
         pipeline_func=create_pipeline,
         package_path=PIPELINE_JSON
