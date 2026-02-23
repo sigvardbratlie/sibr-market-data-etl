@@ -4,9 +4,11 @@ from pathlib import Path
 from src.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
 from src.training import Train
 from src.predictions import Predict
-from sibr_module import Logger
 import logging
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 CLEANER_MAP = {
     'cars': CarsCleaner,
@@ -47,10 +49,6 @@ def main():
     parser.add_argument('--replace', action='store_true', help='Replace existing data in BigQuery.')
 
     args = parser.parse_args()
-
-    #global logger
-    logger = Logger(log_name='main',enable_cloud_logging=args.cloud_logging)
-    logger.log_level = "DEBUG"
 
     # Inverterer flagget for enklere bruk i koden
     save_to_bq = not args.no_save
