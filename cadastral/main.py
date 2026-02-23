@@ -1,5 +1,7 @@
 from kartverkets_api.kartverket import kartverketsAPI
-from sibr_module import BigQuery, LoggerV2, SecretsManager
+from sibr_module import BigQuery
+from google.cloud import secretmanager
+import logging
 import argparse
 import asyncio
 import pandas as pd
@@ -7,10 +9,13 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
 load_dotenv()
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
+    logger.error("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
     raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
 
 parser = argparse.ArgumentParser()
@@ -33,20 +38,14 @@ type_group  = parser.add_mutually_exclusive_group(required=True)
 type_group.add_argument("-f","--fill", action="store_true", help="Fills information for missing rows")
 type_group.add_argument("-ow","--overwrite", action="store_true", help="Fills information for missing rows")
 
-logger = LoggerV2("kartverketMain")
-sm = SecretsManager(logger = logger, project_id="sibr-market")
+secret_client = secretmanager.SecretManagerServiceClient()
 os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
-os.environ["GRUNNBOK_PASSWORD"] = sm.get_secret("GRUNNBOK_API_KEY")
-load_dotenv()
-api = kartverketsAPI(logger=logger)
+os.environ["GRUNNBOK_PASSWORD"] = secret_client.access_secret_version(request={"name": "projects/sibr-market/secrets/GRUNNBOK_API_KEY/versions/latest"}).payload.data.decode("UTF-8")
+api = kartverketsAPI()
 bq = BigQuery(logger=logger,project_id="sibr-market")
 
 
 async def main():
-    #logger = LoggerV2("kartverketMain")
-
-
-
 
     starttime = datetime.now()
     args = parser.parse_args()
