@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.error("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
-    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
+    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)

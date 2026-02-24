@@ -10,27 +10,7 @@ class JobSpider(FinnBaseSpider):
     _table_name = "jobs"
 
     start_urls = [
-                'https://www.finn.no/job/fulltime/search.html?occupation=0.77',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.6',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=1.16.334&occupation=1.16.340&occupation=1.16.339&occupation=1.16.337&occupation=1.16.338',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=1.16.196&occupation=1.16.333&occupation=1.16.323&occupation=1.16.204&occupation=1.16.332&occupation=1.16.357&occupation=1.16.331&occupation=1.16.241&occupation=1.16.330',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.19',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.20',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.28',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.32',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.36',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.48',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.51',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.53',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.59',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.64',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.68',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.9999',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.67&occupation=0.66&occupation=0.65&occupation=0.63&occupation=0.58&occupation=0.73&occupation=0.62&occupation=0.61&occupation=0.60&occupation=0.72&occupation=0.85&occupation=0.57&occupation=0.55&occupation=0.54&occupation=0.52&occupation=0.50&occupation=0.49',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.47&occupation=0.46&occupation=0.83&occupation=0.45&occupation=0.44&occupation=0.43&occupation=0.42&occupation=0.40&occupation=0.39&occupation=0.84&occupation=0.38&occupation=0.37&occupation=0.35&occupation=0.34',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.31&occupation=0.33&occupation=0.30&occupation=0.29&occupation=0.27&occupation=0.26&occupation=0.25',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.24&occupation=0.71&occupation=0.23&occupation=0.22&occupation=0.21&occupation=0.18&occupation=0.41&occupation=0.76&occupation=0.17&occupation=0.15&occupation=0.14&occupation=0.81&occupation=0.82&occupation=0.13&occupation=0.12',
-                 'https://www.finn.no/job/fulltime/search.html?occupation=0.11&occupation=0.9&occupation=0.8&occupation=0.7&occupation=0.78&occupation=0.5&occupation=0.4&occupation=0.80&occupation=0.70&occupation=0.69&occupation=0.3&occupation=0.2&occupation=0.1&occupation=0.79'
+        'https://www.finn.no/job/search',
     ]
     def __init__(self, *args, other_urls=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,6 +24,9 @@ class JobSpider(FinnBaseSpider):
     custom_settings = {**FinnBaseSpider.custom_settings,
                        'LOG_LEVEL': 'INFO',
                        }
+    def get_listing_urls(self, response):
+        return response.css('a.job-card-link::attr(href)').getall()
+
     @property
     def table_name(self):
         return self._table_name

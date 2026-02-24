@@ -29,6 +29,12 @@ ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 32
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 0.1
+AUTOTHROTTLE_MAX_DELAY = 10
+AUTOTHROTTLE_TARGET_CONCURRENCY = 8.0
+RETRY_HTTP_CODES = [429, 500, 502, 503, 504, 522, 524, 408]
+RETRY_TIMES = 5
 LOG_FILE = 'sibr-market-scraping.log'
 LOG_LEVEL = 'INFO'
 log_level = getattr(logging, LOG_LEVEL, logging.INFO)

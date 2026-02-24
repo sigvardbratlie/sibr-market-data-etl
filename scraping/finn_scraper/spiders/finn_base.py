@@ -2,6 +2,7 @@ import scrapy
 from scrapy_playwright.page import PageMethod
 import asyncio
 import json
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 class FinnBaseSpider(scrapy.Spider):
     allowed_domains = ["www.finn.no"]
@@ -138,31 +139,58 @@ class FinnBaseSpider(scrapy.Spider):
         self.count += 1
         if self.count % 500 == 0:
             self.logger.info(f'Processed {self.count} listings so far. Processing {response.url}')
-        for article in response.css('article.sf-search-ad'):
-            article_url = response.urljoin(article.css('h2 a::attr(href)').get())
+        article_urls = self.get_listing_urls(response)
+        for url in article_urls:
             meta = {'errback': self.errback}
             if self.use_playwright_items:
                 meta['playwright'] = True
                 meta['playwright_include_page'] = True
-            yield scrapy.Request(url=article_url, meta=meta, callback=self.parse)
+            yield scrapy.Request(url=url, meta=meta, callback=self.parse)
 
-        next_page = self.get_next_page_request(response)
-        if next_page:
-            yield next_page
+        if article_urls:
+            next_page = self.get_next_page_request(response)
+            if next_page:
+                yield next_page
+
+    def get_listing_urls(self, response):
+        """Extract item URLs from a listing page. Override in subclasses with different HTML."""
+        return [
+            response.urljoin(article.css('h2 a::attr(href)').get())
+            for article in response.css('article.sf-search-ad')
+            if article.css('h2 a::attr(href)').get()
+        ]
 
     async def parse(self, response):
         raise NotImplementedError("You must implement the parse method in your spider")
 
 
     def get_next_page_request(self, response):
-        next_page = response.css('a[rel="next"]::attr(href)').get()
-        if next_page:
-            next_page_url = response.urljoin(next_page)
-            meta = {'errback': self.errback}
-            if self.use_playwright_listings:
-                meta['playwright'] = True
-                meta['playwright_include_page'] = True
-                meta['playwright_page_methods'] = [
-                    PageMethod('wait_for_selector', 'article.sf-search-ad'),
-                    PageMethod('wait_for_load_state', 'networkidle')]
-            return scrapy.Request(url=next_page_url,meta=meta,callback=self.parse_listings_page)
+        next_page_url = None
+
+        # Strategy 1: <w-pagination> web component (mc, car, boat, home, ...)
+        # Pagination content is in shadow DOM, but attributes are in the regular DOM
+        pagination = response.css('w-pagination')
+        if pagination:
+            current_page = int(pagination.attrib.get('current-page', 1))
+            total_pages = int(pagination.attrib.get('pages', 1))
+            base_url = pagination.attrib.get('base-url', '')
+            if current_page < total_pages and base_url:
+                next_page_url = response.urljoin(base_url + str(current_page + 1))
+
+        # Strategy 2: plain <a rel="next"> (jobs, older pages)
+        if not next_page_url:
+            next_href = response.css('a[rel="next"]::attr(href)').get()
+            if next_href:
+                next_page_url = response.urljoin(next_href)
+
+        if not next_page_url:
+            return None
+
+        meta = {'errback': self.errback}
+        if self.use_playwright_listings:
+            meta['playwright'] = True
+            meta['playwright_include_page'] = True
+            meta['playwright_page_methods'] = [
+                PageMethod('wait_for_selector', 'article.sf-search-ad'),
+                PageMethod('wait_for_load_state', 'networkidle')]
+        return scrapy.Request(url=next_page_url, meta=meta, callback=self.parse_listings_page)

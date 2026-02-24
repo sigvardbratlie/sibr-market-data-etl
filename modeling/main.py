@@ -19,7 +19,8 @@ CLEANER_MAP = {
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
+    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
 
 # 2. Definer konstanter for å unngå "magiske strenger" og repetisjon
 SUPPORTED_DATASETS = ['cars', 'homes', 'rentals',"new_homes"]

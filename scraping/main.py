@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud service account JSON key file.")
+    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    #raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud service account JSON key file.")
 
 map_spiders = {'homes': HomeSpider,
            'cars': CarSpider,

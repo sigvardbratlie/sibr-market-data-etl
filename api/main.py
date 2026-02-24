@@ -6,14 +6,17 @@ from dotenv import load_dotenv
 from pathlib import Path
 from src.api import DataApi
 from sibr_api import RateLimitError
-from sibr_module import Logger
 from google.cloud import bigquery
 from google.cloud import firestore
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
+    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
 
 
 map_conc_requests = {"nominatim" : 5,
@@ -34,7 +37,6 @@ parser.add_argument("-t","--task", choices=["geocode","statens-vegvesen","all"],
 if __name__ == "__main__":
     async def main():
         args = parser.parse_args()
-        logger = Logger(log_name='api',enable_cloud_logging=args.cloud_logging)
         starttime = datetime.now()
 
         api = DataApi(logger=logger)
@@ -48,7 +50,7 @@ if __name__ == "__main__":
                         addresses = args.address
                     result = await api.get_geonorge(addresses)
                     res = api.transform_single_geonorge(result).to_dict(orient='records')[0]
-                    print(f'Coordinates for address {args.address}: {res.get("lat")},{res.get("lng")}')
+                    logger.info(f'Coordinates for address {args.address}: {res.get("lat")},{res.get("lng")}')
             else:
                 logger.info(f'====== STARTING GEONORGE GEOCODING ======')
                 sql = '''

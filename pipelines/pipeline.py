@@ -5,11 +5,14 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 import argparse
-
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
+    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
 
 # ---- SETUP ----
 PROJECT_ID = 'sibr-market'
@@ -35,11 +38,6 @@ image_tags = {"scraping": args.tag_scraping if args.tag_scraping else TAG,
               "api" : args.tag_api if args.tag_api else TAG,
               "modeling" : args.tag_modeling if args.tag_modeling else TAG,
               "cadastral" : args.tag_cadastral if args.tag_cadastral else TAG}
-
-# SCRAPING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/scraping:{TAG}"
-# API_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/api:{TAG}"
-# MODELING_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/modeling:{TAG}"
-# CADASTRAL_IMAGE_URI = f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/cadastral:{TAG}"
 
 def mk_image_uri(task : str):
     return f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/{task}:{image_tags[task]}"
@@ -145,9 +143,9 @@ if __name__ == '__main__':
             cron = "0 2 */3 * *",
             max_concurrent_run_count = 1,
         )
-        print(f'Created schedule: {job_schedule.name}')
+        logger.info(f'Created schedule: {job_schedule.name}')
 
     if args.run:
-        print(f'Starting the first run immediately')
+        logger.info(f'Starting the first run immediately')
         job.run()
-        print(f'Finished starting the first run')
+        logger.info(f'Finished starting the first run')
