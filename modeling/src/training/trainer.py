@@ -26,8 +26,8 @@ class Trainer(SibrBase):
         X = df.drop(columns=[target], axis=1)
         y = np.log1p(df[target]) if log_target else df[target]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
-        logger.info(f"Train set size: {X_train.shape[0]}, Test set size: {X_test.shape[0]}")
-        logger.info(f"Target: {target} and log_target: {log_target}")
+        logger.info(f"📊 Train: {X_train.shape[0]} rows | Test: {X_test.shape[0]} rows")
+        logger.info(f"🎯 Target: {target} | log_target: {log_target}")
         return X_train, X_test, y_train, y_test
 
     def save_model(self, pipeline, results: dict, data_name: str):
@@ -45,12 +45,12 @@ class Trainer(SibrBase):
             all_models_df = pd.read_json(local_manifest_path, orient='records')
 
             if data_name in all_models_df['dataset'].values:
-                logger.info(f"Oppdaterer eksisterende modell '{data_name}' i manifestet.")
+                logger.info(f"♻️  Updating model '{data_name}' in manifest.")
                 all_models_df = all_models_df[all_models_df['dataset'] != data_name]
             all_models_df = pd.concat([all_models_df, new_model_info], ignore_index=True)
             all_models_df.drop_duplicates(subset=['dataset'], keep='last', inplace=True)
         except Exception as e:
-            logger.info(f"Kunne ikke finne '{manifest_filename}'. Oppretter en ny. Feil: {e}")
+            logger.info(f"📋 Manifest '{manifest_filename}' not found — creating new. ({e})")
             all_models_df = new_model_info
 
         all_models_df.to_json(local_manifest_path, orient='records')
@@ -77,7 +77,7 @@ class Trainer(SibrBase):
         return cat_cols, cat_idx
 
     def train(self, df, params, data_name, model, target, save_to_gc=True, categorical=False, log_target=None):
-        logger.info(f'\n \nTRAINING {model().__class__.__name__} model for {data_name.upper()}')
+        logger.info(f'🤖 Training {model().__class__.__name__} for {data_name.upper()}')
         if not log_target:
             log_target = self.log_target
         X_train, X_test, y_train, y_test = self.load_data(df=df, target=target, log_target=log_target)
@@ -123,9 +123,7 @@ class Trainer(SibrBase):
                     break
             training_columns[col] = (str(dtype), sample)
 
-        logger.info(
-            f'MSE test: {mse}, r2 test: {r2}, mse train: {mse_train}, r2 train {r2_train} '
-            f'for {data_name} with target {target} and log_target {log_target}')
+        logger.info(f'📊 {data_name} — Test: MSE={mse:.2f}, R²={r2:.4f} | Train: MSE={mse_train:.2f}, R²={r2_train:.4f} | target={target}, log={log_target}')
         results = {
             'dataset': data_name,
             'target': target,
@@ -148,7 +146,7 @@ class Trainer(SibrBase):
         return df
 
     def run(self, save_to_gc=True):
-        logger.info(f'RUNNING {self.task_name} for dataset: {self.dataset}. Save to GC is {save_to_gc}')
+        logger.info(f'🚀 Running {self.task_name} for: {self.dataset} | save_to_gc={save_to_gc}')
         if self.dataset == 'homes':
             data = self.bq.read_homes(task="train")
             df_a = data.get("homes_apartments")
@@ -208,8 +206,7 @@ class Trainer(SibrBase):
             df_fossil = data.get("cars_fossil")
             df_el.dropna(inplace=True)
             df_fossil.dropna(inplace=True)
-            logger.info(
-                f'Length dataframes after dropping NaN: df_el: {len(df_el)} | df_fossil: {len(df_fossil)}')
+            logger.info(f'📊 After dropna — cars_el: {len(df_el)} rows | cars_fossil: {len(df_fossil)} rows')
             params_el = {'depth': 7, 'iterations': 1223, 'l2_leaf_reg': np.float64(1.3895264494261033),
                             'learning_rate': np.float64(0.09150423569345205), 'random_state': 52}
             params_fossil = {'depth': 4, 'iterations': 1463, 'l2_leaf_reg': np.float64(1.7419090119209117),

@@ -39,7 +39,7 @@ class CustomBigQuery(BigQuery):
             '''
         if limit:
             sql += f' LIMIT {limit}'
-        logger.info(f"Reading raw data from dataset: raw.{dataset}")
+        logger.info(f"📥 Reading raw data from raw.{dataset}")
         return self.read_bq(sql)
 
     def read_geonorge(self):
@@ -60,7 +60,7 @@ class CustomBigQuery(BigQuery):
             '''
         if limit:
             sql += f' LIMIT {limit}'
-        logger.info(f"Reading clean data from dataset: {dataset}")
+        logger.info(f"📥 Reading clean data from clean.{dataset}")
         return self.read_bq(sql)
 
     def read_oslo(self, query=None, dataset_name=None, task=None):
@@ -384,7 +384,7 @@ class CustomBigQuery(BigQuery):
             elif "bedrooms" in df_r.columns:
                 df_r["ref_rent"] = df_r.apply(lambda row: row['ref_rent_pr_bedroom'] * row['bedrooms'], axis=1)
             else:
-                logger("No bedroom or primary_area in dataframe: {df_r.columns}")
+                logger.warning(f"⚠️ No bedroom or primary_area column in dataframe. Columns: {df_r.columns.tolist()}")
             if df_a.empty or df_h.empty or df_o.empty or df_r.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
             return {'homes_apartments': df_a, 'homes_houses': df_h, 'homes_oslo': df_o, 'homes_rentals_oslo': df_r}
@@ -543,8 +543,7 @@ class CustomBigQuery(BigQuery):
                                   limit=limit, random_samples=random_samples, last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
-            logger.info(
-                f"Length's of dataframes: \t rentals {len(df_a)}, rental_oslo {len(df_o)}, rental_co-living {len(df_co)}")
+            logger.info(f"📊 DataFrame lengths — rentals: {len(df_a)}, rentals_oslo: {len(df_o)}, rentals_co-living: {len(df_co)}")
             return {'rentals': df_a, 'rentals_oslo': df_o, 'rentals_co-living': df_co}
 
         elif task == "predict":
@@ -557,6 +556,5 @@ class CustomBigQuery(BigQuery):
                                   limit=limit, random_samples=random_samples, last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
-            logger.info(
-                f"Length's of dataframes: \t rentals {len(df_a)}, rental_oslo {len(df_o)}, rental_co-living {len(df_co)}")
+            logger.info(f"📊 DataFrame lengths — rentals: {len(df_a)}, rentals_oslo: {len(df_o)}, rentals_co-living: {len(df_co)}")
             return {'rentals': df_a, 'rentals_oslo': df_o, 'rentals_co-living': df_co}

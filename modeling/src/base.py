@@ -69,12 +69,14 @@ class SibrBase:
 
     def read_in_data(self):
         if self.task_name == 'clean':
+            logger.info(f'📥 Reading raw data for: {self.dataset}')
             self.df = self.bq.read_raw(replace=self.replace)
             self.geo = self.bq.read_geonorge()
             if self.df is None or self.df.empty:
-                logger.error(f'No data found, exiting {self.task_name} task.')
+                logger.error(f'❌ No data found for task "{self.task_name}" — cannot continue.')
                 raise ValueError("No data found in BigQuery for the 'clean' task.")
         elif self.task_name == 'pre_processed':
+            logger.info(f'📥 Reading clean data for: {self.dataset}')
             self.df = self.bq.read_clean(replace=self.replace)
         else:
             raise ValueError(

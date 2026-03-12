@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class RentalsCleaner(SibrBase):
     def __init__(self, df=None):
         super().__init__(dataset='rentals')
-        logger.info('RentalsCleaner initialized.')
+        logger.debug('RentalsCleaner initialized.')
         self.df = df
         self.geo = None
 
@@ -175,8 +175,7 @@ class RentalsCleaner(SibrBase):
     def run(self, task: str, df=None, save_to_bq: bool = True, replace: bool = False):
         if task not in ['clean', 'pre_processed']:
             raise ValueError(f'Unsupported task: {task}. Supported tasks are "clean" and "pre_processed".')
-        logger.info(
-            f'Running task: {task} for dataset: {self.dataset} with replace={replace} and save_to_bq={save_to_bq}')
+        logger.info(f'🧹 Running {task} for {self.dataset} | replace={replace}, save_to_bq={save_to_bq}')
         if replace:
             self.replace = replace
         self.task_name = task
@@ -188,6 +187,7 @@ class RentalsCleaner(SibrBase):
             cleaned_df = self.clean()
             if save_to_bq:
                 self.save_data(df=cleaned_df, table_name=self.dataset)
+                logger.info(f'📤 Saved {len(cleaned_df)} cleaned rows for {self.dataset} to BigQuery.')
             return cleaned_df
         elif self.task_name == 'pre_processed':
             if df is None:

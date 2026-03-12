@@ -16,7 +16,7 @@ class Predictor(SibrBase):
     def ensure_columns(self, df, training_columns, data_name=None):
         for col in training_columns:
             if col not in df.columns:
-                logger.warning(f'Column {col} not in dataframe for {data_name}. Adding it.')
+                logger.warning(f'⚠️ Column "{col}" missing for {data_name} — adding with default False.')
                 df[col] = False
         return df[training_columns]
 
@@ -42,7 +42,7 @@ class Predictor(SibrBase):
         return df
 
     def run(self, save_to_bq=True):
-        logger.info(f'RUNNING {self.task_name} for dataset: {self.dataset}. Save to BQ is {save_to_bq}')
+        logger.info(f'🔮 Running {self.task_name} for: {self.dataset} | save_to_bq={save_to_bq}')
         models_json = self.cs.download('models.json', read_in_file=True)
         models = pd.DataFrame.from_dict(models_json)
         models['created_at'] = pd.to_datetime(models['created_at'], unit='ms')
@@ -105,10 +105,12 @@ class Predictor(SibrBase):
             if save_to_bq:
                 if not pred.empty:
                     self.save_data(df=pred, table_name=self.dataset)
+                    logger.info(f'📤 Saved {len(pred)} predictions for homes to BigQuery.')
                 if not pred_r.empty:
                     self.save_data(df=pred_r, table_name='homes_rentals')
+                    logger.info(f'📤 Saved {len(pred_r)} rental predictions to BigQuery.')
             else:
-                logger.warning('No data saved to BQ as save_to_bq is set to False.')
+                logger.warning('⚠️ save_to_bq=False — no data written to BigQuery.')
 
         if self.dataset == 'cars':
             data = self.bq.read_cars(task="predict")
@@ -132,8 +134,9 @@ class Predictor(SibrBase):
             if save_to_bq:
                 if not pred.empty:
                     self.save_data(df=pred, table_name=self.dataset)
+                    logger.info(f'📤 Saved {len(pred)} predictions for cars to BigQuery.')
             else:
-                logger.warning('No data saved to BQ as save_to_bq is set to False.')
+                logger.warning('⚠️ save_to_bq=False — no data written to BigQuery.')
 
 
 # Backward-compatible alias

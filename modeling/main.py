@@ -23,7 +23,7 @@ CLEANER_MAP = {
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
 
 # 2. Definer konstanter for å unngå "magiske strenger" og repetisjon
 SUPPORTED_DATASETS = ['cars', 'homes', 'rentals',"new_homes"]
@@ -59,7 +59,7 @@ def main():
 
     def run_cleaning_pipeline(dataset: str, save_to_bq: bool, replace: bool):
         """Kjører rense- og preprosesseringssteg for et gitt datasett."""
-        logger.info(f"--- Running cleaning pipeline for dataset: {dataset} ---")
+        logger.info(f"🧹 Running cleaning pipeline for: {dataset}")
         cleaner = CLEANER_MAP[dataset]()
 
         # Kjør rensing
@@ -68,26 +68,26 @@ def main():
 
         # Kjør preprosessering. Bruk den rensede df-en hvis den finnes.
         if df is not None:
-            logger.info("Using dataframe from previous step for pre_processeding.")
+            logger.info("♻️ Using dataframe from previous step for pre-processing.")
             cleaner.run(task='pre_processed', df=df, save_to_bq=save_to_bq, replace=replace)
         else:
-            logger.info("No dataframe from previous step. Running pre_processeding from source.")
+            logger.info("📥 No dataframe from previous step — loading from source.")
             cleaner.run(task='pre_processed', save_to_bq=save_to_bq, replace=replace)
-        logger.info(f"--- Finished cleaning pipeline for {dataset} ---")
+        logger.info(f"✅ Finished cleaning pipeline for: {dataset}")
 
 
     # 4. Bruk en if/elif/else-struktur for å unngå overlappende logikk
     if args.run_all:
-        logger.info("=== Running all tasks for cars and homes ===")
+        logger.info("🚀 Running all tasks for cars and homes")
         for dataset in TRAIN_PREDICT_DATASETS:
             run_cleaning_pipeline(dataset, save_to_bq, args.replace)
 
             if args.task == 'train' or args.run_train:
-                logger.info(f"--- Running training for: {dataset} ---")
+                logger.info(f"🤖 Running training for: {dataset}")
                 train = Train(dataset=dataset,)
                 train.run()
 
-            logger.info(f"--- Running prediction for: {dataset} ---")
+            logger.info(f"🔮 Running prediction for: {dataset}")
             predict = Predict(dataset=dataset,)
             predict.run()
 
@@ -95,10 +95,10 @@ def main():
         if args.dataset and args.dataset not in SUPPORTED_DATASETS:
             raise ValueError(f"For cleaning, --dataset must be one of: {SUPPORTED_DATASETS}")
         if args.dataset:
-            logger.info(f"=== Cleaning for: {args.dataset} ===")
+            logger.info(f"🧹 Cleaning for: {args.dataset}")
             run_cleaning_pipeline(args.dataset, save_to_bq, args.replace)
         else:
-            logger.info(f"=== Running cleaning for all supported datasets ===")
+            logger.info("🧹 Running cleaning for all supported datasets")
             for dataset in SUPPORTED_DATASETS:
                 run_cleaning_pipeline(dataset, save_to_bq, args.replace)
 
@@ -106,13 +106,13 @@ def main():
         if args.dataset and args.dataset not in SUPPORTED_DATASETS:
             raise ValueError(f"For training, --dataset must be one of: {SUPPORTED_DATASETS}")
         if args.dataset:
-                logger.info(f"=== Running training for: {args.dataset} ===")
+                logger.info(f"🤖 Running training for: {args.dataset}")
                 train = Train(dataset=args.dataset, logger=logger)
                 train.run()
         else:
-            logger.info("=== Running training for all datasets ===")
+            logger.info("🤖 Running training for all datasets")
             for dataset in SUPPORTED_DATASETS:
-                logger.info(f"--- Running training for: {dataset} ---")
+                logger.info(f"🤖 Training: {dataset}")
                 train = Train(dataset=dataset, logger=logger)
                 train.run()
 
@@ -120,12 +120,12 @@ def main():
         if args.dataset and args.dataset not in TRAIN_PREDICT_DATASETS:
             raise ValueError(f"For prediction, --dataset must be one of: {TRAIN_PREDICT_DATASETS}")
         if args.dataset:
-            logger.info(f"=== Running prediction for: {args.dataset} ===")
+            logger.info(f"🔮 Running prediction for: {args.dataset}")
             predict = Predict(dataset=args.dataset, logger=logger)
             predict.run()
         else:
             for dataset in TRAIN_PREDICT_DATASETS:
-                logger.info(f"--- Running prediction for: {dataset} ---")
+                logger.info(f"🔮 Predicting: {dataset}")
                 predict = Predict(dataset=dataset, logger=logger)
                 predict.run()
 
@@ -133,7 +133,7 @@ def main():
         if args.dataset not in SUPPORTED_DATASETS:
             raise ValueError(f"Dataset must be one of: {SUPPORTED_DATASETS}")
 
-        logger.info(f"=== Running task '{args.task}' for dataset '{args.dataset}' ===")
+        logger.info(f"▶️  Task '{args.task}' | dataset '{args.dataset}'")
         if args.task in ['clean', 'pre_processed']:
             cleaner = CLEANER_MAP[args.dataset](logger=logger)
             cleaner.run(task=args.task, save_to_bq=save_to_bq, replace=args.replace)
@@ -147,7 +147,7 @@ def main():
             raise ValueError(f"Task must be one of: {TASK_CHOICES}")
 
     else:
-        logger.info("No specific run command provided. Use --help for options.")
+        logger.warning("⚠️ No run command provided. Use --help for options.")
 
 
 if __name__ == "__main__":

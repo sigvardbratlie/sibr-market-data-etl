@@ -40,7 +40,7 @@ class NewHomesCleaner(SibrBase):
                     if res is not None:
                         return res
             else:
-                logger.warning(f'Unexpected dtype {type(val)} | {val} for cadastre field.')
+                logger.warning(f'⚠️ Unexpected cadastre dtype {type(val)}: {val}')
                 return val
 
         for field in cadastre_fields:
@@ -244,8 +244,7 @@ class NewHomesCleaner(SibrBase):
     def run(self, task: str, df=None, save_to_bq: bool = True, replace: bool = False):
         if task not in ['clean', 'pre_processed']:
             raise ValueError(f'Unsupported task: {task}. Supported tasks are "clean" and "pre_processed".')
-        logger.info(
-            f'Running task: {task} for dataset: {self.dataset} with replace={replace} and save_to_bq={save_to_bq}')
+        logger.info(f'🧹 Running {task} for {self.dataset} | replace={replace}, save_to_bq={save_to_bq}')
         if replace:
             self.replace = replace
         self.task_name = task
@@ -258,6 +257,7 @@ class NewHomesCleaner(SibrBase):
             if save_to_bq:
                 self.save_data(df=cleaned_df, table_name=self.dataset,
                                 explicit_schema={"coop_unit_num": "INTEGER", "coop_org_num": "INTEGER"})
+                logger.info(f'📤 Saved {len(cleaned_df)} cleaned rows for {self.dataset} to BigQuery.')
             return cleaned_df
         elif self.task_name == 'pre_processed':
             if df is None:
