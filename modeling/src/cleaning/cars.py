@@ -7,19 +7,19 @@ from .feature_builder import (
     split_date, process_bool, transform_nan, rm_empty_features, fill_na,
     add_missing_features, ensure_num_types, rm_nan_cols,
 )
-
+import logging
+logger = logging.getLogger(__name__)
 
 class CarsCleaner(SibrBase):
-    def __init__(self, logger=None, df=None):
-        super().__init__(dataset='cars', logger=logger)
-        self.logger.info('CarsCleaner initialized.')
+    def __init__(self,  df=None):
+        super().__init__(dataset='cars',)
         self.df = df
         self.geo = None
 
     def clean(self) -> pd.DataFrame:
         df = transform_nan(self.df)
         df = rm_empty_features(df)
-        self.logger.debug(f'Length: {len(df)} | after merge with sales time')
+        logger.debug(f'Length: {len(df)} | after merge with sales time')
 
         int_cols = [
             'model_year', 'mileage', 'transfer_fee', 'price_excl_transfer', 'power',
@@ -41,18 +41,18 @@ class CarsCleaner(SibrBase):
             & ((df['model_year'] >= 1900) & (df['model_year'] < 2030))
             & ((df['power'] >= 0) & (df['power'] < 5000))
             ]
-        self.logger.debug(f'Length: {len(df)} | after filter price and usable_area')
+        logger.debug(f'Length: {len(df)} | after filter price and usable_area')
 
         df = mk_fractions(df, "price_pr_km", "total_price", "mileage")
 
         df['scrape_date'] = pd.to_datetime(df['scrape_date'], errors='coerce', utc=True)
         df['clean_date'] = pd.Timestamp.now()
-        self.logger.debug(f'Length: {len(df)} | after datetime conversion')
+        logger.debug(f'Length: {len(df)} | after datetime conversion')
 
         df['postal_code'] = df['address'].apply(extract_postnummer)
         df = pd.merge(df, self.geo[['postal_code', 'municipality', 'county', 'region']], how='left',
                       on='postal_code')
-        self.logger.debug(f'Length: {len(df)} | after geo')
+        logger.debug(f'Length: {len(df)} | after geo')
 
         fuel_mapping = {
             'diesel': 'diesel', 'bensin': 'bensin', 'el': 'el', 'elektrisitet': 'el',
@@ -77,7 +77,7 @@ class CarsCleaner(SibrBase):
                 df.loc[:, col] = df[col].map(fuel_mapping).fillna('annet')
             elif col == 'brand':
                 df.loc[:, col] = df[col].replace(brand_mapping)
-        self.logger.debug(f'Length: {len(df)} | after category mapping')
+        logger.debug(f'Length: {len(df)} | after category mapping')
 
         df = fill_na(df, feature='gearbox', fill_value='Automat')
         df = fill_na(df, feature='body_type', fill_value='SUV/Offroad')
@@ -88,7 +88,7 @@ class CarsCleaner(SibrBase):
         df = fill_na(df, feature='engine_tuned', fill_value='False')
         df = fill_na(df, feature='liens', fill_value=False)
         df.loc[:, 'liens'] = df['liens'].astype('object').astype(str)
-        self.logger.debug(f'Length: {len(df)} | after fill_na')
+        logger.debug(f'Length: {len(df)} | after fill_na')
 
         keys_carparts = [
             'delebil', 'rep objekt', 'reparasjonsobjekt', 'repobjekt', 'restaureringsobjekt',
@@ -174,7 +174,7 @@ class CarsCleaner(SibrBase):
                     lambda x: extract_datetime(x) if isinstance(x, str) else x)
                 df[field] = pd.to_datetime(df[field])
             else:
-                self.logger.warning(f'Field {field} missing from dataframe.')
+                logger.warning(f'Field {field} missing from dataframe.')
 
         add_if_missing = ['web', 'email', 'warranty', 'color_interior', 'gearbox_type', 'warranty_length',
                           'condition_report']
@@ -185,7 +185,7 @@ class CarsCleaner(SibrBase):
             if col in df.columns:
                 df[col] = df[col].astype(str)
 
-        self.logger.debug(f'Length: {len(df)} | before saving to BQ. Replace {self.replace}')
+        logger.debug(f'Length: {len(df)} | before saving to BQ. Replace {self.replace}')
         self.df = df
         return df
 
@@ -194,7 +194,7 @@ class CarsCleaner(SibrBase):
             self.df = df
         df = self.df.dropna(subset='item_id')
         df.drop_duplicates(subset=['item_id'], inplace=True)
-        self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
+        logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
         df.dropna(subset=['total_price', 'mileage', 'model_year'], inplace=True)
 
         drop = [
@@ -215,7 +215,7 @@ class CarsCleaner(SibrBase):
         df.drop(columns=drop_eq, inplace=True, errors='ignore')
 
         df = rm_empty_features(df)
-        self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on price, usable_area and bedrooms')
+        logger.debug(f'Length of df: {len(df)} | after dropping NaN on price, usable_area and bedrooms')
 
         fuel_mapping = {
             'diesel': 'diesel', 'bensin': 'bensin', 'el': 'el', 'elektrisitet': 'el',
@@ -253,7 +253,7 @@ class CarsCleaner(SibrBase):
 
         df['dealer'] = df['dealer'].apply(lambda x: False if x.lower() == 'private' else True)
         df = process_bool(df)
-        self.logger.debug(f'Length of df: {len(df)} | after mapping categories and creating dummy variables')
+        logger.debug(f'Length of df: {len(df)} | after mapping categories and creating dummy variables')
 
         col_valid_values = {
             'fuel': ['el + bensin', 'diesel', 'el', 'bensin'],
@@ -275,9 +275,9 @@ class CarsCleaner(SibrBase):
         for col, valid_values in col_valid_values.items():
             df = mk_cat(df, col, valid_values)
 
-        self.logger.debug(f'Length of df: {len(df)} | after mapping and removing unwanted categories')
+        logger.debug(f'Length of df: {len(df)} | after mapping and removing unwanted categories')
         df = df[df['sales_type'] != 'leasing']
-        self.logger.debug(f'Length of df: {len(df)} | after dummy variables')
+        logger.debug(f'Length of df: {len(df)} | after dummy variables')
 
         df['n_features'] = df['features'].apply(lambda x: len(x.split(',')) if isinstance(x, str) else 0)
         df.drop(columns=['features'], inplace=True, errors='ignore')
@@ -285,7 +285,7 @@ class CarsCleaner(SibrBase):
         df = split_date(df, date_col='scrape_date')
         df = split_date(df, date_col='last_updated')
         df['pre_processed_date'] = pd.Timestamp.now()
-        self.logger.debug(f'Length of df: {len(df)} | after date columns')
+        logger.debug(f'Length of df: {len(df)} | after date columns')
 
         df = ensure_num_types(df, num_types=['int', 'float'])
 
@@ -296,14 +296,14 @@ class CarsCleaner(SibrBase):
         df_el.dropna(subset=['range'], inplace=True)
         df_el.drop(columns=['engine_volume'], inplace=True, errors='ignore')
         df_el = rm_nan_cols(df_el)
-        self.logger.debug(f'Length of df_el: {len(df_el)} | before saving to BQ. Replace is {self.replace}')
+        logger.debug(f'Length of df_el: {len(df_el)} | before saving to BQ. Replace is {self.replace}')
 
         if save_to_bq and not df_el.empty:
             self.save_data(df=df_el, table_name=f'{self.dataset}_el')
 
         df_fossil = df_fossil.drop(columns=['range'], errors='ignore')
         df_fossil = rm_nan_cols(df_fossil)
-        self.logger.debug(f'Length of df_fossil: {len(df_fossil)} | Before saving to BQ. Replace is {self.replace}')
+        logger.debug(f'Length of df_fossil: {len(df_fossil)} | Before saving to BQ. Replace is {self.replace}')
 
         if save_to_bq and not df_fossil.empty:
             self.save_data(df=df_fossil, table_name=f'{self.dataset}_fossil',
@@ -314,26 +314,23 @@ class CarsCleaner(SibrBase):
     def run(self, task: str, df=None, save_to_bq: bool = True, replace: bool = False):
         if task not in ['clean', 'pre_processed']:
             raise ValueError(f'Unsupported task: {task}. Supported tasks are "clean" and "pre_processed".')
-        self.logger.info(
+        logger.info(
             f'Running task: {task} for dataset: {self.dataset} with replace={replace} and save_to_bq={save_to_bq}')
-        try:
-            if replace:
-                self.replace = replace
-            self.task_name = task
-            if self.task_name == 'clean':
-                if df is None:
-                    self.read_in_data()
-                else:
-                    self.df = df
-                cleaned_df = self.clean()
-                if save_to_bq:
-                    self.save_data(df=cleaned_df, table_name=self.dataset)
-                return cleaned_df
-            elif self.task_name == 'pre_processed':
-                if df is None:
-                    self.read_in_data()
-                else:
-                    self.df = df
-                return self.pre_process(save_to_bq=save_to_bq)
-        finally:
-            self.logger.shutdown()
+        if replace:
+            self.replace = replace
+        self.task_name = task
+        if self.task_name == 'clean':
+            if df is None:
+                self.read_in_data()
+            else:
+                self.df = df
+            cleaned_df = self.clean()
+            if save_to_bq:
+                self.save_data(df=cleaned_df, table_name=self.dataset)
+            return cleaned_df
+        elif self.task_name == 'pre_processed':
+            if df is None:
+                self.read_in_data()
+            else:
+                self.df = df
+            return self.pre_process(save_to_bq=save_to_bq)

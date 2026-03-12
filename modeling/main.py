@@ -7,8 +7,12 @@ from src.predictions import Predict
 import logging
 from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+noisy = ["urllib3", "google", ]
+[logging.getLogger(name).setLevel(logging.WARNING) for name in noisy]
+
 
 CLEANER_MAP = {
     'cars': CarsCleaner,
@@ -20,7 +24,6 @@ CLEANER_MAP = {
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
     logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
-    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
 
 # 2. Definer konstanter for å unngå "magiske strenger" og repetisjon
 SUPPORTED_DATASETS = ['cars', 'homes', 'rentals',"new_homes"]
@@ -54,15 +57,10 @@ def main():
     # Inverterer flagget for enklere bruk i koden
     save_to_bq = not args.no_save
 
-    if args.log_level != 'DEBUG':
-        log_level = getattr(logging, args.log_level.upper())
-        for handler in logger._logger.handlers:
-            handler.setLevel(log_level)
-
     def run_cleaning_pipeline(dataset: str, save_to_bq: bool, replace: bool):
         """Kjører rense- og preprosesseringssteg for et gitt datasett."""
         logger.info(f"--- Running cleaning pipeline for dataset: {dataset} ---")
-        cleaner = CLEANER_MAP[dataset](logger=logger)
+        cleaner = CLEANER_MAP[dataset]()
 
         # Kjør rensing
         # La df være None hvis det feiler, eller en DataFrame hvis det lykkes
@@ -86,11 +84,11 @@ def main():
 
             if args.task == 'train' or args.run_train:
                 logger.info(f"--- Running training for: {dataset} ---")
-                train = Train(dataset=dataset, logger=logger)
+                train = Train(dataset=dataset,)
                 train.run()
 
             logger.info(f"--- Running prediction for: {dataset} ---")
-            predict = Predict(dataset=dataset, logger=logger)
+            predict = Predict(dataset=dataset,)
             predict.run()
 
     elif args.run_clean:

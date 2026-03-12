@@ -2,6 +2,8 @@ from sibr_module import BigQuery
 import pandas as pd
 from typing import Literal
 
+import logging
+logger = logging.getLogger(__name__)
 
 class CustomBigQuery(BigQuery):
 
@@ -37,7 +39,7 @@ class CustomBigQuery(BigQuery):
             '''
         if limit:
             sql += f' LIMIT {limit}'
-        self.logger.info(f"Reading raw data from dataset: raw.{dataset}")
+        logger.info(f"Reading raw data from dataset: raw.{dataset}")
         return self.read_bq(sql)
 
     def read_geonorge(self):
@@ -58,7 +60,7 @@ class CustomBigQuery(BigQuery):
             '''
         if limit:
             sql += f' LIMIT {limit}'
-        self.logger.info(f"Reading clean data from dataset: {dataset}")
+        logger.info(f"Reading clean data from dataset: {dataset}")
         return self.read_bq(sql)
 
     def read_oslo(self, query=None, dataset_name=None, task=None):
@@ -251,7 +253,7 @@ class CustomBigQuery(BigQuery):
             elif 'usable_area' in df.columns:
                 df['ref_price'] = df.apply(lambda row: row['ref_price_pr_i_sqm'] * row['usable_area'], axis=1)
             else:
-                self.logger.warning(f'Missing usable or internal area: {df.columns}')
+                logger.warning(f'Missing usable or internal area: {df.columns}')
             df.drop(columns=['pre_processed_date'], errors='ignore', inplace=True)
             return df
 
@@ -382,7 +384,7 @@ class CustomBigQuery(BigQuery):
             elif "bedrooms" in df_r.columns:
                 df_r["ref_rent"] = df_r.apply(lambda row: row['ref_rent_pr_bedroom'] * row['bedrooms'], axis=1)
             else:
-                self.logger("No bedroom or primary_area in dataframe: {df_r.columns}")
+                logger("No bedroom or primary_area in dataframe: {df_r.columns}")
             if df_a.empty or df_h.empty or df_o.empty or df_r.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
             return {'homes_apartments': df_a, 'homes_houses': df_h, 'homes_oslo': df_o, 'homes_rentals_oslo': df_r}
@@ -541,7 +543,7 @@ class CustomBigQuery(BigQuery):
                                   limit=limit, random_samples=random_samples, last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
-            self.logger.info(
+            logger.info(
                 f"Length's of dataframes: \t rentals {len(df_a)}, rental_oslo {len(df_o)}, rental_co-living {len(df_co)}")
             return {'rentals': df_a, 'rentals_oslo': df_o, 'rentals_co-living': df_co}
 
@@ -555,6 +557,6 @@ class CustomBigQuery(BigQuery):
                                   limit=limit, random_samples=random_samples, last_scrape=last_scrape)
             if df_a.empty or df_o.empty or df_co.empty:
                 raise ImportError(f"Dataframe {task} for {dataset} is empty")
-            self.logger.info(
+            logger.info(
                 f"Length's of dataframes: \t rentals {len(df_a)}, rental_oslo {len(df_o)}, rental_co-living {len(df_co)}")
             return {'rentals': df_a, 'rentals_oslo': df_o, 'rentals_co-living': df_co}

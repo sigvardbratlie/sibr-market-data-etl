@@ -1,16 +1,17 @@
 import os
-from sibr_module import Logger, CStorage
+from sibr_module import CStorage
 from .bigquery_client import CustomBigQuery
 
+import logging
+logger = logging.getLogger(__name__)
 
 class SibrBase:
-    def __init__(self, dataset, logger=None):
+    def __init__(self, dataset):
         self._dataset = dataset
         self._task_name = None
         self._replace = False
         self._bucket_name = 'sibr-market'
         self._project_id = 'sibr-market'
-        self.logger = logger
         self.bq = None
         self.cs = None
         self.df = None
@@ -44,11 +45,9 @@ class SibrBase:
             raise ValueError("Task name must be one of: 'admin', 'clean', 'pre_processed', 'raw', 'predictions'.")
 
     def setup(self):
-        if not self.logger:
-            self.logger = Logger(f'{self.dataset.capitalize()}')
-        self.bq = CustomBigQuery(project_id=self._project_id, logger=self.logger, dataset=self.dataset)
-        self.cs = CStorage(project_id=self._project_id, logger=self.logger, bucket_name=self._bucket_name)
-        self.logger.debug(f'Dataset: {self.dataset} | | Replace: {self.replace}')
+        self.bq = CustomBigQuery(project_id=self._project_id, dataset=self.dataset)
+        self.cs = CStorage(project_id=self._project_id, bucket_name=self._bucket_name)
+        logger.debug(f'Dataset: {self.dataset} | | Replace: {self.replace}')
 
     def save_data(self, df, table_name, explicit_schema=None):
         if self.task_name not in ['admin', 'clean', 'pre_processed', 'raw', 'predictions']:
@@ -73,7 +72,7 @@ class SibrBase:
             self.df = self.bq.read_raw(replace=self.replace)
             self.geo = self.bq.read_geonorge()
             if self.df is None or self.df.empty:
-                self.logger.error(f'No data found, exiting {self.task_name} task.')
+                logger.error(f'No data found, exiting {self.task_name} task.')
                 raise ValueError("No data found in BigQuery for the 'clean' task.")
         elif self.task_name == 'pre_processed':
             self.df = self.bq.read_clean(replace=self.replace)

@@ -7,12 +7,12 @@ from .feature_builder import (
     split_date, process_bool, transform_nan, rm_empty_features, fill_na,
     add_missing_features, ensure_num_types,
 )
-
+import logging
+logger = logging.getLogger(__name__)
 
 class NewHomesCleaner(SibrBase):
-    def __init__(self, logger=None, df=None):
-        super().__init__(dataset='new_homes', logger=logger)
-        self.logger.info('NewHomesCleaner initialized.')
+    def __init__(self, df=None):
+        super().__init__(dataset='new_homes',)
         self.df = df
         self.geo = None
 
@@ -20,7 +20,7 @@ class NewHomesCleaner(SibrBase):
         """Clean new_homes data using the same logic as HomesCleaner."""
         df = transform_nan(self.df)
         df = rm_empty_features(df)
-        self.logger.debug(f'Length: {len(df)} | after merge with sales time')
+        logger.debug(f'Length: {len(df)} | after merge with sales time')
 
         int_cols = [
             'price', 'balcony', 'total_price', 'bedrooms', 'rooms', 'build_year',
@@ -40,7 +40,7 @@ class NewHomesCleaner(SibrBase):
                     if res is not None:
                         return res
             else:
-                self.logger.warning(f'Unexpected dtype {type(val)} | {val} for cadastre field.')
+                logger.warning(f'Unexpected dtype {type(val)} | {val} for cadastre field.')
                 return val
 
         for field in cadastre_fields:
@@ -76,7 +76,7 @@ class NewHomesCleaner(SibrBase):
             & ((df['floor'] >= 0) & (df['floor'] < 100))
             & ((df['total_price'] >= 0) & (df['total_price'] < 35000000))
             ]
-        self.logger.debug(f'Length: {len(df)} | after filter price and usable_area')
+        logger.debug(f'Length: {len(df)} | after filter price and usable_area')
 
         df['scrape_date'] = pd.to_datetime(df['scrape_date'], errors='coerce', utc=True)
         df['clean_date'] = pd.Timestamp.now()
@@ -161,7 +161,7 @@ class NewHomesCleaner(SibrBase):
         df = add_missing_features(df, extra_cols)
         df = ensure_num_types(df, num_types=['int', 'float'])
 
-        self.logger.debug(f'Length: {len(df)} | before saving to BQ. Replace {self.replace}')
+        logger.debug(f'Length: {len(df)} | before saving to BQ. Replace {self.replace}')
         self.df = df
         return df
 
@@ -170,7 +170,7 @@ class NewHomesCleaner(SibrBase):
             self.df = df
         df = self.df.dropna(subset='item_id')
         df.drop_duplicates(subset=['item_id'], inplace=True)
-        self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
+        logger.debug(f'Length of df: {len(df)} | after dropping NaN on item_id')
         df.dropna(subset=['price', 'usable_area', 'bedrooms'], inplace=True)
 
         drop = [
@@ -184,7 +184,7 @@ class NewHomesCleaner(SibrBase):
         ]
         df.drop(columns=drop, inplace=True, errors='ignore')
         df = rm_empty_features(df)
-        self.logger.debug(f'Length of df: {len(df)} | after dropping NaN on price, usable_area and bedrooms')
+        logger.debug(f'Length of df: {len(df)} | after dropping NaN on price, usable_area and bedrooms')
 
         df = df[df['property_type'] != 'Garasje/Parkering']
         df['dealer'] = df['dealer'].apply(lambda x: False if x.lower() == 'private' else True)
@@ -216,7 +216,7 @@ class NewHomesCleaner(SibrBase):
         df_a.loc[:, 'rooms'] = df_a['rooms'].fillna(df_a['bedrooms'] + 1)
         df_a.loc[:, 'external_area'] = df_a['external_area'].fillna(0)
         df_a.loc[:, 'monthly_common_cost'] = df_a['monthly_common_cost'].fillna(0)
-        self.logger.debug(f'Length of df_a: {len(df_a)} | before saving to BQ.')
+        logger.debug(f'Length of df_a: {len(df_a)} | before saving to BQ.')
         if save_to_bq:
             self.save_data(df_a, 'new_homes_apartments')
 
@@ -224,7 +224,7 @@ class NewHomesCleaner(SibrBase):
                   'external_area']
         df_h.drop(columns=drop_h, inplace=True, errors='ignore')
         df_h = pd.get_dummies(df_h, columns=['property_type'], drop_first=True)
-        self.logger.debug(f'Length of df_h: {len(df_h)} | before saving to BQ.')
+        logger.debug(f'Length of df_h: {len(df_h)} | before saving to BQ.')
         if save_to_bq:
             self.save_data(df_h, 'new_homes_houses', explicit_schema={"sqm_pr_bedroom": "FLOAT"})
 
@@ -235,7 +235,7 @@ class NewHomesCleaner(SibrBase):
         prop_type_r = ['Enebolig', 'Leilighet', 'Tomannsbolig', 'Andre', 'Rekkehus']
         df_r = mk_cat(df_r, 'property_type', prop_type_r)
         df_r = pd.get_dummies(df_r, columns=['property_type'], drop_first=True)
-        self.logger.debug(f'Length of df_r: {len(df_r)} | before saving to BQ.')
+        logger.debug(f'Length of df_r: {len(df_r)} | before saving to BQ.')
         if save_to_bq:
             self.save_data(df_r, 'new_homes_rentals')
 
@@ -244,27 +244,25 @@ class NewHomesCleaner(SibrBase):
     def run(self, task: str, df=None, save_to_bq: bool = True, replace: bool = False):
         if task not in ['clean', 'pre_processed']:
             raise ValueError(f'Unsupported task: {task}. Supported tasks are "clean" and "pre_processed".')
-        self.logger.info(
+        logger.info(
             f'Running task: {task} for dataset: {self.dataset} with replace={replace} and save_to_bq={save_to_bq}')
-        try:
-            if replace:
-                self.replace = replace
-            self.task_name = task
-            if self.task_name == 'clean':
-                if df is None:
-                    self.read_in_data()
-                else:
-                    self.df = df
-                cleaned_df = self.clean()
-                if save_to_bq:
-                    self.save_data(df=cleaned_df, table_name=self.dataset,
-                                   explicit_schema={"coop_unit_num": "INTEGER", "coop_org_num": "INTEGER"})
-                return cleaned_df
-            elif self.task_name == 'pre_processed':
-                if df is None:
-                    self.read_in_data()
-                else:
-                    self.df = df
-                return self.pre_process(save_to_bq=save_to_bq)
-        finally:
-            self.logger.shutdown()
+        if replace:
+            self.replace = replace
+        self.task_name = task
+        if self.task_name == 'clean':
+            if df is None:
+                self.read_in_data()
+            else:
+                self.df = df
+            cleaned_df = self.clean()
+            if save_to_bq:
+                self.save_data(df=cleaned_df, table_name=self.dataset,
+                                explicit_schema={"coop_unit_num": "INTEGER", "coop_org_num": "INTEGER"})
+            return cleaned_df
+        elif self.task_name == 'pre_processed':
+            if df is None:
+                self.read_in_data()
+            else:
+                self.df = df
+            return self.pre_process(save_to_bq=save_to_bq)
+
