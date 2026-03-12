@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
     #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
 
 parser = argparse.ArgumentParser()
@@ -66,7 +66,7 @@ async def main():
                              dataset_name = "admin",
                              table_name = "kartverket")
             except Exception as e:
-                logger.error(f'Error getting properties from arg by_properties: {e}')
+                logger.error(f'❌ Error getting properties from by_properties: {e}')
 
         elif args.by_period:
             if args.start_date and args.end_date:
@@ -81,9 +81,7 @@ async def main():
             #max_date = bq.read_bq("SELECT MAX (scrape_date) FROM raw.homes")
             #max_date = max_date.iloc[0,0]
             max_date = None
-            logger.info(f'======== RUNNING PROGRAM OF UPDATING PROJECT ==========\n'
-                        f'OWNERSHIP TYPES: {ownership_type_arg}\nTRANSFER TYPES: {transfer_type_arg}'
-                        f'\nFILL: {args.fill}\nOVERWRITE: {args.overwrite}\nBATCH SIZE: {BATCH_SIZE}\nLIMIT {args.limit}')
+            logger.info(f'🚀 Updating project | ownership={ownership_type_arg} | transfer={transfer_type_arg} | fill={args.fill} | overwrite={args.overwrite} | batch={BATCH_SIZE} | limit={args.limit}')
             for transfer_type in transfer_type_arg:
                 for ownership_type in ownership_type_arg:
                     if ownership_type == "eier":
@@ -124,21 +122,21 @@ async def main():
                         query += f'\nAND DATE(scrape_date) > DATE_SUB(CURRENT_DATE(), INTERVAL 300 DAY)'
                     if args.limit:
                         query += f"\nLIMIT {args.limit}"
-                    logger.info(f'Reading data from BQ with transfer type {transfer_type}, ownership type {ownership_type}, fill {args.fill} and overwrite {args.overwrite}')
+                    logger.info(f'📥 Reading from BQ — transfer={transfer_type}, ownership={ownership_type}')
                     #print(query)
                     db = bq.read_bq(query)
 
                     #TRANSFORM DATA FOR KARTVERKET
                     db = api.transform_cadastrals(db, request_cols=request_cols) if ownership_type == "eier" else api.transform_coop(db,request_cols=request_cols)
                     properties = db[request_cols].to_dict(orient='records')
-                    logger.info(f'Total batch size is {len(properties)}')
+                    logger.info(f'📊 Total properties to process: {len(properties)}')
                     #logger.warning(f'EXAMPLE: {properties[:5]}')
                     for batch in range(0,len(properties),BATCH_SIZE):
-                        logger.info(f'Working batch with {len(properties[batch:batch+BATCH_SIZE])} of {len(properties)} properties ({len(properties[batch:batch+BATCH_SIZE]) / len(properties) * 100:.2f}% of total properties)')
+                        logger.info(f'🔄 Batch {batch//BATCH_SIZE + 1}: {len(properties[batch:batch+BATCH_SIZE])} of {len(properties)} properties ({len(properties[batch:batch+BATCH_SIZE]) / len(properties) * 100:.1f}%)')
                         try:
                             df = await api.get_by_property(properties[batch:batch+BATCH_SIZE], transfer_type=transfer_type, ownership_type=ownership_type)
                         except Exception as e:
-                            logger.error(f'Error getting properties when calling get_by_property with batch: {batch}: {e}')
+                            logger.error(f'❌ Error in get_by_property (batch {batch}): {e}')
                             raise
 
                         logger.info(f'➡️ Input from batch kartverket API to data cleaning: {len(df)} with transfer type {transfer_type} and ownership type {ownership_type}')
@@ -172,10 +170,10 @@ async def main():
                             bq.exe_query(query_to_exe)
 
     except Exception as e:
-        logger.error(f'Error getting properties. No arguments where called!: {e}')
+        logger.error(f'❌ Unexpected error: {e}')
 
     finally:
-        logger.info(f'========= PROGRAM FINISHED IN {datetime.now() - starttime} \n')
+        logger.info(f'✅ Program finished in {datetime.now() - starttime}')
         await api.close()
 
 if __name__ == "__main__" :
