@@ -125,6 +125,7 @@ Deployment is handled via Google Cloud Build. A push to `main` with `"gcloud bui
 2. Push to Artifact Registry (`europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/`)
 3. Vertex AI pipeline compilation and deployment
 
+
 ## Project Structure
 
 ```
