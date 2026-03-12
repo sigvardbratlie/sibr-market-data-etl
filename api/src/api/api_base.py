@@ -145,6 +145,9 @@ class ApiBase:
         '''
         if self.session and not self.session.closed:
             await self.session.close()
+            # aiohttp requires one event-loop iteration after close() to release
+            # underlying TCP connections. Without this the process hangs on exit.
+            await asyncio.sleep(0.250)
 
     async def _reset_session(self):
         '''
@@ -155,6 +158,7 @@ class ApiBase:
         '''
         if self.session:
             await self.session.close()
+            await asyncio.sleep(0.250)
         self.session = None
         return await self._ensure_session()
 

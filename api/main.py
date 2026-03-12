@@ -4,12 +4,11 @@ from datetime import datetime
 import argparse
 from dotenv import load_dotenv
 from pathlib import Path
-from src.api import DataApi
-from sibr_api import RateLimitError
+from api import DataApi, RateLimitError
 from google.cloud import bigquery
 from google.cloud import firestore
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -38,7 +37,7 @@ if __name__ == "__main__":
         args = parser.parse_args()
         starttime = datetime.now()
 
-        api = DataApi(logger=logger)
+        api = DataApi()
 
         if args.task in ["geocode","all"]:
             if args.address:
