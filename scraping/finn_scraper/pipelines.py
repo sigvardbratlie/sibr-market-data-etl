@@ -11,9 +11,12 @@ import os
 
 # useful for handling different item types with a single interface
 
+import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+logger = logging.getLogger(__name__)
 
 class Emailer:
     def __init__(self, to_address, from_address, password):
@@ -35,9 +38,9 @@ class Emailer:
             text = msg.as_string()
             server.sendmail(self.from_address, self.to_address, text)
             server.quit()
-            print("Email sent successfully!")
+            logger.info("✅ Email sent successfully")
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            logger.error(f"❌ Failed to send email: {e}")
 
 emailer = Emailer(
             to_address="sigvard@sibr.no",
@@ -151,11 +154,11 @@ class BQPipeline:
         )
 
     def open_spider(self,spider):
-        spider.logger.info('========= STARTING BQ PIPELINE =========')
+        spider.logger.info('🚀 BQ Pipeline started')
         self.client = bigquery.Client(project=self.project)
         self.dataset_id = f'raw'
         self.table_id = f"{self.dataset_id}.{spider.table_name}"
-        spider.logger.info(f'PIPELINE INFO: \t project: {self.project}, table: {self.table_id}')
+        spider.logger.info(f'📋 Project: {self.project} | Table: {self.table_id}')
 
 
     def close_spider(self,spider):
@@ -165,7 +168,7 @@ class BQPipeline:
             self._save_to_bq(spider)
         self.client.close()
         self.send_nan_report(spider)
-        spider.logger.info('========= BQ PIPELINE FINISHED =========')
+        spider.logger.info('✅ BQ Pipeline finished')
 
     def track_nan(self, item):
         for key, value in item.items():
@@ -188,7 +191,7 @@ class BQPipeline:
                     body = f"The field '{key}' has a high NaN rate of {(count/self._nan['total'])*100:.2f}% in the '{spider.table_name}' table."
                     emailer.send_email(subject, body)
             else:
-                spider.logger.info(f'Total is 0, skipping percentage calculation for {key}. (count: {count})')
+                spider.logger.info(f'⚠️ Total is 0, skipping NaN% for "{key}" (count: {count})')
         spider.logger.info(report)
         self._nan.clear()
 
@@ -220,8 +223,8 @@ class BQPipeline:
             )
             job = self.client.load_table_from_dataframe(df,self.table_id,job_config=job_config)
             job.result()
-            spider.logger.info(f"{len(df)} rows saved to {self.table_id}")
+            spider.logger.info(f"📤 {len(df)} rows saved to {self.table_id}")
         except Exception as e:
-            spider.logger.error(f"Error saving to BigQuery: {e}")
+            spider.logger.error(f"❌ Error saving to BigQuery: {e}")
 
         self.buffer.clear()

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
     #raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud service account JSON key file.")
 
 map_spiders = {'homes': HomeSpider,
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         handler.setLevel(getattr(logging,args.log_level.upper(), logging.INFO))
 
     process = CrawlerProcess(settings=settings)
-    logging.getLogger().info(f"\n \n -------- NEW SCRAPING JOB STARTED -------- ")
+    logger.info("🕷️  -------- NEW SCRAPING JOB STARTED --------")
 
 
     if args.urls_file:
@@ -67,27 +67,27 @@ if __name__ == "__main__":
             with open(args.urls_file, 'r') as f:
                 # Leser alle linjer og fjerner eventuelle tomme linjer/whitespace
                 urls_to_scrape = [line.strip() for line in f if line.strip()]
-            logging.getLogger().info(f"Loaded {len(urls_to_scrape)} URLs from file: {args.urls_file}")
+            logger.info(f"📋 Loaded {len(urls_to_scrape)} URLs from: {args.urls_file}")
         except FileNotFoundError:
-            logging.getLogger().error(f"Error: The file '{args.urls_file}' was not found.")
+            logger.error(f"❌ File not found: '{args.urls_file}'")
             exit(1) # Avslutter skriptet hvis filen ikke finnes
 
     spiders_to_run = [map_spiders[spider] for spider in args.spiders if args.spiders and spider in map_spiders]
     for spider in spiders_to_run:
         if args.other_urls:
-            logging.getLogger().info(f"Adding {spider.name} with custom URLs: {args.other_urls}")
+            logger.info(f"➕ Adding spider '{spider.name}' with custom URLs: {args.other_urls}")
             process.crawl(spider, other_urls=args.other_urls)
         elif args.urls_file:
             if not urls_to_scrape:
                 raise TypeError(f'No urls in file {args.urls_file}')
-            logging.getLogger().info(f"Adding {spider.name} with URLs from file: {len(urls_to_scrape)} single urls to get")
+            logger.info(f"➕ Adding spider '{spider.name}' — {len(urls_to_scrape)} URLs from file")
             process.crawl(spider, other_urls=urls_to_scrape)
         else:
-            logging.getLogger().info(f"Adding {spider.name} with default URLs")
+            logger.info(f"➕ Adding spider '{spider.name}' with default URLs")
             process.crawl(spider)
 
-    logging.getLogger().info(f"Starting scraping with spiders: {', '.join(spider.name for spider in spiders_to_run)}")
+    logger.info(f"🚀 Starting scraping — spiders: {', '.join(spider.name for spider in spiders_to_run)}")
     process.start()
 
     end = datetime.now()
-    logging.getLogger().info(f"Scraping completed in {end - start} seconds")
+    logger.info(f"✅ Scraping completed in {end - start}")
