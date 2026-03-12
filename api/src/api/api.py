@@ -33,7 +33,7 @@ class DataApi(ApiBase):
         encoded_address = quote_plus(address)
 
         if not isinstance(encoded_address, str) or not encoded_address.strip():
-            logger.warning(f"Skipping address: {address}. No valid output after encoding: {encoded_address}")
+            logger.warning(f"⚠️ Skipping invalid address: '{address}'")
             return None
 
         return encoded_address
@@ -61,7 +61,7 @@ class DataApi(ApiBase):
         encoded_address = self._encode_address(address)
 
         if encoded_address is None:
-            logger.warning(f'Address input is None')
+            logger.warning("⚠️ Address input is None")
             return None
 
         url = base_url + search_endpoint + f"?q={encoded_address}&format=jsonv2"
@@ -82,18 +82,18 @@ class DataApi(ApiBase):
                     return response[0]
                 elif len(response) > 1 :
                     self.ok_responses += 1
-                    logger.warning(f'Multiple results for address {address}')
+                    logger.warning(f"⚠️ Multiple results for address: '{address}'")
                     return response
                 else:
                     self.fail_responses += 1
-                    logger.warning(f'No results for address {address}')
+                    logger.warning(f"⚠️ No results for address: '{address}'")
                     return None
             elif response is None:
                 self.fail_responses += 1
-                logger.warning(f'No results for address {address}')
+                logger.warning(f"⚠️ No results for address: '{address}'")
                 return None
         except NotFoundError as e:
-            logger.warning(f'Address {address} not found - 404 error - {e}')
+            logger.warning(f"⚠️ Address not found (404): '{address}'")
             self.fail_responses += 1
             return None
 
@@ -124,7 +124,7 @@ class DataApi(ApiBase):
             for col in required_cols:
                 if col not in data.columns:
                     logger.warning(
-                        f"Column {col} not found in response. Adding empty column. \t \tresponse: {response}")
+                        f"⚠️ Column '{col}' not in response — adding empty. Response: {response}")
                     data[col] = None
             return data[required_cols]
 
@@ -150,7 +150,7 @@ class DataApi(ApiBase):
         encoded_address = self._encode_address(address)
 
         if encoded_address is None:
-            logger.warning(f'Address input is None')
+            logger.warning("⚠️ Address input is None")
             return None
 
         url = f"{base_url}{search_endpoint}?sok={encoded_address}"
@@ -166,16 +166,16 @@ class DataApi(ApiBase):
                 if len(response) == 1:
                     return response[0]
                 elif len(response) > 1:
-                    logger.warning(f'Multiple results for address {address}')
+                    logger.warning(f"⚠️ Multiple results for address: '{address}'")
                     return response
                 else:
-                    logger.warning(f'No results for address {address}')
+                    logger.warning(f"⚠️ No results for address: '{address}'")
                     return None
             elif response is None:
-                logger.warning(f'No results for address {address}')
+                logger.warning(f"⚠️ No results for address: '{address}'")
                 return None
         except NotFoundError as e:
-            logger.warning(f'Address {address} not found - 404 error - {e}')
+            logger.warning(f"⚠️ Address not found (404): '{address}'")
             return None
 
     def transform_single_geonorge(self,response : tuple[str,dict] | dict) -> pd.DataFrame:
@@ -210,7 +210,7 @@ class DataApi(ApiBase):
                 return df
             elif df.empty:
                 self.fail_responses += 1
-                logger.warning(f'No results {metadata.get("sokeStreng")}') if metadata else logger.warning(f'No results for input {item_id}')
+                logger.warning(f"⚠️ No geocode results for: {metadata.get('sokeStreng') if metadata else item_id}")
                 if item_id is not None:
                     return pd.DataFrame({"item_id": [item_id],
                                  "get_date": pd.Timestamp.now(),
@@ -247,11 +247,11 @@ class DataApi(ApiBase):
             else:
                 self.fail_responses += 1
                 if self.fail_responses % logging_rate == 0:
-                    logger.error(f'The {logging_rate}th Failed response with kjennemerke: {response.status_code}')
+                    logger.error(f"❌ {logging_rate}th failed response for kjennemerke: {kjennemerke}")
                 return None
         except NotFoundError:
             self.fail_responses += 1
-            logger.warning(f'Car with kjennemerke: {kjennemerke} not found. 404 Error')
+            logger.warning(f"⚠️ Car not found (404): kjennemerke={kjennemerke}")
             return None
 
 #     def transform_singe_car(self, response):
@@ -393,7 +393,7 @@ class DataApi(ApiBase):
             batch.commit()
             return True
         except Exception as e:
-            print(f"Batch commit failed: {e}")
+            logger.error(f"❌ Batch commit failed: {e}")
             return False
 
     def save_cars(self, responses, batch_size=200):
@@ -412,7 +412,7 @@ class DataApi(ApiBase):
         with ThreadPoolExecutor(max_workers=10) as executor:
             results = list(executor.map(self.commit_batch, batches))
 
-        logger.info(f"Committed {sum(results)} batches successfully")
+        logger.info(f"📤 Committed {sum(results)}/{len(results)} batches to Firestore")
 
 if __name__ == '__main__':
 

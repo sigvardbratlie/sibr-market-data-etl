@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
 
 
 map_conc_requests = {"nominatim" : 5,
@@ -49,9 +49,9 @@ if __name__ == "__main__":
                         addresses = args.address
                     result = await api.get_geonorge(addresses)
                     res = api.transform_single_geonorge(result).to_dict(orient='records')[0]
-                    logger.info(f'Coordinates for address {args.address}: {res.get("lat")},{res.get("lng")}')
+                    logger.info(f'🗺️  {args.address} → {res.get("lat")},{res.get("lng")}')
             else:
-                logger.info(f'====== STARTING GEONORGE GEOCODING ======')
+                logger.info('🗺️  Starting Geonorge geocoding')
                 sql = '''
                         WITH CombinedItems AS (
                             SELECT h.item_id, h.address
@@ -80,10 +80,10 @@ if __name__ == "__main__":
                                         save_interval=5000,
                                         concurrent_requests=30,)
                 except RateLimitError as e:
-                    logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
+                    logger.error(f'❌ Rate limit exceeded (Geonorge): {e}')
                 finally:
                     await api.close()
-                logger.info(f'====== STARTING NOMINATIM GEOCODING ======\n \tfetching those items that Geonorge missed!')
+                logger.info('🗺️  Starting Nominatim geocoding — filling Geonorge misses')
                 sql = '''
                             SELECT 
                         item_id, 
@@ -112,9 +112,9 @@ if __name__ == "__main__":
                                         save_interval=5000,
                                         concurrent_requests=5,)
                 except RateLimitError as e:
-                    logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
+                    logger.error(f'❌ Rate limit exceeded (Nominatim): {e}')
                 finally:
-                    logger.info(f'Geocoding process completed. Time used: {datetime.now() - starttime}.')
+                    logger.info(f'✅ Geocoding completed in {datetime.now() - starttime}')
                     await api.close()
 
         if args.task in ["statens-vegvesen","all"]:
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
             fetched_ids = db.collection("statens_vegvesen").list_documents()
             fetched_ids = [doc.id for doc in fetched_ids]
-            logger.info(f'Already fetched {len(fetched_ids)} items from Statens Vegvesen API')
+            logger.info(f'📋 Already fetched {len(fetched_ids)} items from Statens Vegvesen')
             query = """
                     SELECT item_id, reg_num
                     FROM clean.cars c
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                                                    save_interval=9000,
                                                    return_result=False)
             except RateLimitError as e:
-                logger.error(f'Rate limit exceeded: {e}. Stopping script. Please try again later')
+                logger.error(f'❌ Rate limit exceeded (Statens Vegvesen): {e}')
             finally:
                 await api.close()
 

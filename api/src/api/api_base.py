@@ -131,7 +131,7 @@ class ApiBase:
                 wait_time = oldest_timestamp - (now - self.rate_limit_period)
 
                 if wait_time > 0:
-                    logger.info(f"Rate limit nådd. Venter i {wait_time:.2f} sekunder.")
+                    logger.info(f"⏳ Rate limit reached — waiting {wait_time:.2f}s")
                     await asyncio.sleep(wait_time)
 
             self.request_timestamps.append(time.monotonic())
@@ -276,32 +276,32 @@ class ApiBase:
 
                     results_to_save.append(result)
                     if count % 500 == 0:
-                        logger.info(f'Processed {count} so far. Successful requests: {self.ok_responses} | failed requests {self.fail_responses}')
+                        logger.info(f"🔄 Processed {count} items | ✅ {self.ok_responses} ok | ❌ {self.fail_responses} failed")
 
                     if len(results_to_save) >= save_interval:
-                        logger.info(f'Processed {count} so far. Save interval of {save_interval} reached.')
+                        logger.info(f"💾 Save interval reached at {count} items")
                         if saver:
                             try:
-                                logger.info(f'Saving {len(results_to_save)} results')
+                                logger.info(f"📤 Saving {len(results_to_save)} results...")
                                 data_to_save = await asyncio.to_thread(transformer,results_to_save)
                                 await asyncio.to_thread(saver,data_to_save)
                             except Exception as e:
-                                logger.error(f"NB: SAVING ERROR: {e}")
+                                logger.error(f"❌ Save error: {e}")
                                 raise
                         all_results.extend(results_to_save)
                         results_to_save.clear()
                 except (RateLimitError, APIkeyError, PermissionError) as fatal_errors:
-                    logger.error(f'Fatal error in `_process_tasks`, stopping process: {fatal_errors}')
+                    logger.error(f"❌ Fatal error in _process_tasks — stopping: {fatal_errors}")
                     for task in tasks:
                         if not task.done():
                             task.cancel()
                     await asyncio.gather(*tasks,return_exceptions=True)
                     raise
                 except SkipItemException as item_error:
-                    logger.warning(f'Skipping item due to a recoverable error: {item_error}')
+                    logger.warning(f"⚠️ Skipping item (recoverable): {item_error}")
                     continue
                 except Exception as e:
-                    logger.error(f"An unexpected error occurred in task processing loop: {e}")
+                    logger.error(f"❌ Unexpected error in task loop: {e}")
                     continue
 
         finally:
@@ -311,11 +311,11 @@ class ApiBase:
                         data_to_save = await asyncio.to_thread(transformer, results_to_save)
                         await asyncio.to_thread(saver, data_to_save)
                     except Exception as e:
-                        logger.error(f"An error occurred while saving results: {e}")
+                        logger.error(f"❌ Error saving final results: {e}")
                 all_results.extend(results_to_save)
                 results_to_save.clear()
 
-        logger.info(f'Job finished. Successful requests: {self.ok_responses} | failed requests {self.fail_responses}')
+        logger.info(f"✅ Job finished | ✅ {self.ok_responses} ok | ❌ {self.fail_responses} failed")
         return all_results
 
     async def get_items_with_ids(self,
@@ -378,16 +378,16 @@ class ApiBase:
                     result  = await fetcher(item)
                     return (item_id, result)
                 except (RateLimitError, APIkeyError, PermissionError) as fatal_errors:
-                    logger.error(f'fatal error for {item_id,item}.  Stopping code: {fatal_errors}')
+                    logger.error(f"❌ Fatal error for item_id={item_id}: {fatal_errors}")
                     raise
                 # except (asyncio.TimeoutError, ConnectionError,aiohttp.ClientError,SkipItemException) as timeout_errors:
                 #     logger.warning(f'Timeout errors with {item_id},{item} - {timeout_errors}')
                 #     raise
                 except SkipItemException as timeout_errors:
-                    logger.warning(f'Timeout errors with {item_id},{item} - {timeout_errors}')
+                    logger.warning(f"⚠️ Skipping item_id={item_id} due to timeout/connection error")
                     raise
                 except Exception as e:
-                    logger.error(f'General Error fetching item {item} with item_id {item_id} - {e}. Returning {(item_id, None)}')
+                    logger.error(f"❌ Error fetching item_id={item_id}: {e}")
                     return (item_id, None)
 
         tasks = [asyncio.create_task(fetch_item_with_id(item_id=item_id, item=item)) for item_id,item in inputs.items()]
@@ -442,16 +442,16 @@ class ApiBase:
                     result  = await fetcher(item)
                     return result
                 except (RateLimitError, APIkeyError, PermissionError) as fatal_errors:
-                    logger.warning(f'fatal error for {item}. Stopping code: {fatal_errors}')
+                    logger.error(f"❌ Fatal error for item={item}: {fatal_errors}")
                     raise
                 # except (asyncio.TimeoutError, ConnectionError, aiohttp.ClientError) as timeout_errors:
                 #     logger.warning(f'Timeout errors with {item} - {timeout_errors}')
                 #     raise
                 except SkipItemException as timeout_errors:
-                    logger.warning(f'Timeout errors with {item} - {timeout_errors}')
+                    logger.warning(f"⚠️ Skipping item due to timeout/connection error: {item}")
                     raise
                 except Exception as e:
-                    logger.error(f'Error fetching item {item} with - {e}')
+                    logger.error(f"❌ Error fetching item={item}: {e}")
                     return None
 
         tasks = [asyncio.create_task(fetch_item(item=item)) for item in inputs]
