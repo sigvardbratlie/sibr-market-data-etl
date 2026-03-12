@@ -16,7 +16,6 @@ load_dotenv()
 
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
     logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
-    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
 
 
 map_conc_requests = {"nominatim" : 5,
