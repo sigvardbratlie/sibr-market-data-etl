@@ -1,4 +1,4 @@
-from sibr_module import BigQuery
+from .helpers import BigQuery
 import asyncio
 import pandas as pd
 from urllib.parse import quote_plus

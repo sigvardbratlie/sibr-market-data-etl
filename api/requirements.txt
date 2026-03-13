@@ -402,7 +402,6 @@ shapely==2.1.2
     #   geopandas
 sibr-api==0.3.4
     # via api (pyproject.toml)
-sibr-module==0.2.11
     # via api (pyproject.toml)
 six==1.17.0
     # via python-dateutil

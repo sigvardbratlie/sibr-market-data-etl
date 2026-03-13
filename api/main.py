@@ -8,6 +8,7 @@ from api import DataApi, RateLimitError
 from google.cloud import bigquery
 from google.cloud import firestore
 import logging
+import sys
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,7 @@ if __name__ == "__main__":
                 finally:
                     logger.info(f'✅ Geocoding completed in {datetime.now() - starttime}')
                     await api.close()
+                    
 
         if args.task in ["statens-vegvesen","all"]:
             #STATENS VEGVESEN har en request limit på 50.000 request pr dag
