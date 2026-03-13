@@ -392,7 +392,6 @@ sibr-api==0.3.4
     # via
     #   cadastral (pyproject.toml)
     #   kartverkets-api
-sibr-module==0.2.11
     # via cadastral (pyproject.toml)
 six==1.17.0
     # via python-dateutil

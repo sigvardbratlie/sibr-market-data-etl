@@ -1,5 +1,5 @@
 from kartverkets_api.kartverket import kartverketsAPI
-from sibr_module import BigQuery
+from cadastral.helpers import BigQuery
 from google.cloud import secretmanager
 import logging
 import argparse
