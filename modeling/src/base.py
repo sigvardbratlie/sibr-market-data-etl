@@ -1,5 +1,7 @@
 import os
-from sibr_module import CStorage
+import json
+import joblib
+from google.cloud import storage
 from .bigquery_client import CustomBigQuery
 
 import logging
@@ -13,7 +15,7 @@ class SibrBase:
         self._bucket_name = 'sibr-market'
         self._project_id = 'sibr-market'
         self.bq = None
-        self.cs = None
+        self._bucket = None
         self.df = None
         self.geo = None
         self.setup()
@@ -46,8 +48,35 @@ class SibrBase:
 
     def setup(self):
         self.bq = CustomBigQuery(project_id=self._project_id, dataset=self.dataset)
-        self.cs = CStorage(project_id=self._project_id, bucket_name=self._bucket_name)
+        gcs = storage.Client(project=self._project_id)
+        self._bucket = gcs.bucket(self._bucket_name)
         logger.debug(f'Dataset: {self.dataset} | | Replace: {self.replace}')
+
+    def gcs_download(self, blob_name: str, local_path: str = None, read_in_file: bool = False):
+        """Download a blob from GCS. If read_in_file=True, returns the loaded object (pkl or json)."""
+        blob = self._bucket.blob(blob_name)
+        if read_in_file:
+            tmp_path = f'/tmp/{os.path.basename(blob_name)}'
+            blob.download_to_filename(tmp_path)
+            try:
+                ext = blob_name.rsplit('.', 1)[-1].lower()
+                if ext == 'pkl':
+                    return joblib.load(tmp_path)
+                elif ext == 'json':
+                    with open(tmp_path) as f:
+                        return json.load(f)
+                else:
+                    with open(tmp_path) as f:
+                        return f.read()
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+        else:
+            blob.download_to_filename(local_path)
+
+    def gcs_upload(self, local_path: str, blob_name: str):
+        """Upload a local file to GCS."""
+        self._bucket.blob(blob_name).upload_from_filename(local_path)
 
     def save_data(self, df, table_name, explicit_schema=None):
         if self.task_name not in ['admin', 'clean', 'pre_processed', 'raw', 'predictions']:

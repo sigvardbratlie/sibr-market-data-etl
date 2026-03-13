@@ -7,16 +7,14 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
-from sibr_module import Logger
-
 import logging
 logger = logging.getLogger(__name__)
 
 class ParamTuning:
     def __init__(self, dataset_name: str, dataframe: pd.DataFrame, target: str,
-                 model_params: dict, logger: Logger = None, log_target: bool = False):
+                 model_params: dict, logger: logging.Logger = None, log_target: bool = False):
         if not logger:
-            logger = Logger('model_selection')
+            logger = logging.getLogger('model_selection')
         logger = logger
         self.target = target
         self.model_params = model_params

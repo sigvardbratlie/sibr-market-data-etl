@@ -1,4 +1,4 @@
-from sibr_module import BigQuery
+from .helpers import BigQuery
 import pandas as pd
 from typing import Literal
 

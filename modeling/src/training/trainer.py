@@ -41,7 +41,7 @@ class Trainer(SibrBase):
         new_model_info = pd.DataFrame([results])
 
         try:
-            self.cs.download(manifest_filename, local_manifest_path)
+            self.gcs_download(manifest_filename, local_path=local_manifest_path)
             all_models_df = pd.read_json(local_manifest_path, orient='records')
 
             if data_name in all_models_df['dataset'].values:
@@ -54,12 +54,12 @@ class Trainer(SibrBase):
             all_models_df = new_model_info
 
         all_models_df.to_json(local_manifest_path, orient='records')
-        self.cs.upload(local_manifest_path, manifest_filename)
+        self.gcs_upload(local_manifest_path, manifest_filename)
 
         local_filepath = f'/tmp/tmp_file.pkl'
         joblib.dump(pipeline, local_filepath)
         try:
-            self.cs.upload(local_filepath, filename_bucket)
+            self.gcs_upload(local_filepath, filename_bucket)
         finally:
             os.remove(local_filepath)
 

@@ -43,7 +43,7 @@ class Predictor(SibrBase):
 
     def run(self, save_to_bq=True):
         logger.info(f'🔮 Running {self.task_name} for: {self.dataset} | save_to_bq={save_to_bq}')
-        models_json = self.cs.download('models.json', read_in_file=True)
+        models_json = self.gcs_download('models.json', read_in_file=True)
         models = pd.DataFrame.from_dict(models_json)
         models['created_at'] = pd.to_datetime(models['created_at'], unit='ms')
         if self.dataset == 'homes':
@@ -68,10 +68,10 @@ class Predictor(SibrBase):
             res_o = models[models['dataset'] == 'homes_apartments_oslo'].iloc[0].to_dict()
             res_r = models[models['dataset'] == 'rentals_oslo'].iloc[0].to_dict()
 
-            m_a = self.cs.download(res_a.get('filename'), read_in_file=True)
-            m_h = self.cs.download(res_h.get('filename'), read_in_file=True)
-            m_o = self.cs.download(res_o.get('filename'), read_in_file=True)
-            m_r = self.cs.download(res_r.get('filename'), read_in_file=True)
+            m_a = self.gcs_download(res_a.get('filename'), read_in_file=True)
+            m_h = self.gcs_download(res_h.get('filename'), read_in_file=True)
+            m_o = self.gcs_download(res_o.get('filename'), read_in_file=True)
+            m_r = self.gcs_download(res_r.get('filename'), read_in_file=True)
 
             y_pred_a = self.predict_data(dataframe=df_a, pipeline=m_a, model_results=res_a)
             y_pred_h = self.predict_data(dataframe=df_h, pipeline=m_h, model_results=res_h)
@@ -119,8 +119,8 @@ class Predictor(SibrBase):
 
             res_el = models[models['dataset'] == 'cars_el'].iloc[0].to_dict()
             res_fossil = models[models['dataset'] == 'cars_fossil'].iloc[0].to_dict()
-            m_el = self.cs.download(res_el.get('filename'), read_in_file=True)
-            m_fossil = self.cs.download(res_fossil.get('filename'), read_in_file=True)
+            m_el = self.gcs_download(res_el.get('filename'), read_in_file=True)
+            m_fossil = self.gcs_download(res_fossil.get('filename'), read_in_file=True)
 
             y_pred_el = self.predict_data(dataframe=df_el, pipeline=m_el, model_results=res_el)
             y_pred_fossil = self.predict_data(dataframe=df_fossil, pipeline=m_fossil, model_results=res_fossil)
