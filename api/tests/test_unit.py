@@ -14,7 +14,7 @@ import pytest
 import pandas as pd
 from unittest.mock import MagicMock, call, patch
 
-from sibr_api import NotFoundError
+from api import NotFoundError
 
 
 # ─────────────────────────────────────────────────────────────────────────────

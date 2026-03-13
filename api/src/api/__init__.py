@@ -1,6 +1,11 @@
 from .api import DataApi
-from .api_base import RateLimitError, NotFoundError
+from .api_base import RateLimitError, NotFoundError, ApiBase, APIkeyError, SkipItemException
 
 __all__ = ["DataApi",
+           "ApiBase",
+
            "RateLimitError",
-           "NotFoundError",]
+           "NotFoundError",
+           "APIkeyError",
+           "SkipItemException",
+           ]

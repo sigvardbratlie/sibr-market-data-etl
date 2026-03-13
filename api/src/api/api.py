@@ -2,7 +2,7 @@ from .helpers import BigQuery
 import asyncio
 import pandas as pd
 from urllib.parse import quote_plus
-from .api_base import ApiBase, RateLimitError, NotFoundError
+from .api_base import ApiBase, NotFoundError
 from google.cloud import firestore,secretmanager
 from concurrent.futures import ThreadPoolExecutor
 import logging
@@ -413,27 +413,3 @@ class DataApi(ApiBase):
             results = list(executor.map(self.commit_batch, batches))
 
         logger.info(f"📤 Committed {sum(results)}/{len(results)} batches to Firestore")
-
-if __name__ == '__main__':
-
-    async def main():
-        geo  = DataApi()
-        query  = '''
-        SELECT h.item_id, h.address
-                    FROM `sibr-market.clean.homes` h
-                    UNION ALL -- Changed to UNION ALL to keep duplicates if desired, or UNION for unique.
-                              -- If you want to ensure item_id is unique across both tables, UNION is fine.
-                    SELECT r.item_id, r.address
-                    FROM `sibr-market.clean.rentals` r
-               '''
-
-        df = geo.bq.read_bq(query)
-        inputs = df.set_index("item_id")["address"].to_dict()
-
-        results = await geo.get_items_with_ids(inputs,
-                                                    fetcher=geo.get_geonorge,
-                                               transformer=geo.transformer_geonorge,
-                                               save_interval=100,
-                                               concurrent_requests=30)
-        print(results)
-    asyncio.run(main())

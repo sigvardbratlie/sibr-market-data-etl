@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, patch
 
-from sibr_api import NotFoundError
+from api import NotFoundError
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Delte testdata
