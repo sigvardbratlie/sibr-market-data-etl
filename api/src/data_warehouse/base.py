@@ -71,5 +71,5 @@ class DataBase(ABC):
         pass
 
     @abstractmethod
-    def query_to_df(self, query: str) -> pd.DataFrame:
+    def query_to_df(self, query: str, params = None) -> pd.DataFrame:
         pass

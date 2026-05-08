@@ -38,7 +38,7 @@ class DataApi(ApiBase):
 
         return encoded_address
 
-    def save_func(self,df : pd.DataFrame,table_name : str = None, dataset_name : str = None):
+    def save_func(self,df : pd.DataFrame, table_name : str = None, dataset_name : str = None):
 
         if table_name is None:
             table_name = "coordinates"
@@ -208,7 +208,7 @@ class DataApi(ApiBase):
                 return df
             elif df.empty:
                 self.fail_responses += 1
-                logger.warning(f"⚠️ No geocode results for: {metadata.get('sokeStreng') if metadata else item_id}")
+                logger.debug(f"⚠️ No geocode results for: {metadata.get('sokeStreng') if metadata else item_id}")
                 if item_id is not None:
                     return pd.DataFrame({"item_id": [item_id],
                                  "get_date": pd.Timestamp.now(),

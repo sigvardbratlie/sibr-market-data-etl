@@ -255,7 +255,8 @@ class ApiBase:
 
     async def _process_tasks(self,tasks : list,
                              transformer : Callable[[List],any],
-                             saver : Callable, save_interval : int) -> list:
+                             saver : Callable, 
+                             save_interval : int) -> list:
         """
         A function to process a list of tasks.
 
@@ -292,7 +293,7 @@ class ApiBase:
                                 data_to_save = await asyncio.to_thread(transformer,results_to_save)
                                 await asyncio.to_thread(saver,data_to_save)
                             except Exception as e:
-                                logger.error(f"❌ Save error: {e}")
+                                logger.exception(f"❌ Save error: {e}")
                                 raise
                         all_results.extend(results_to_save)
                         results_to_save.clear()
@@ -315,11 +316,8 @@ class ApiBase:
         finally:
             if results_to_save:
                 if saver:
-                    try:
-                        data_to_save = await asyncio.to_thread(transformer, results_to_save)
-                        await asyncio.to_thread(saver, data_to_save)
-                    except Exception as e:
-                        logger.error(f"❌ Error saving final results: {e}")
+                    data_to_save = await asyncio.to_thread(transformer, results_to_save)
+                    await asyncio.to_thread(saver, data_to_save)
                 all_results.extend(results_to_save)
                 results_to_save.clear()
 

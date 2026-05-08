@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 class FirestoreDatabase(NoSQLDatabase):
     def __init__(self, credentials=None):
         from google.cloud import firestore
-        self.db = firestore.Client(credentials=credentials)
+        self.db = firestore.Client(credentials=credentials, database="backend")
 
     def save_response(self, responses, batch_size=200):
         batches = []
@@ -22,3 +22,7 @@ class FirestoreDatabase(NoSQLDatabase):
 
         self.db.commit_batches(batches)
         logger.info(f"Saved {len(responses)} responses to Firestore in {len(batches)} batches.")
+
+    def fetch_collection_ids(self, collection_name):
+        fetched_ids = self.db.collection(collection_name).list_documents()
+        return [doc.id for doc in fetched_ids]

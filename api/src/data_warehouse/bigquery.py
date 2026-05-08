@@ -1,7 +1,7 @@
 import pandas as pd
 import uuid
 import traceback
-from typing import Literal
+from typing import Literal,Any
 import logging
 import os
 import json
@@ -28,7 +28,7 @@ class BigQuery(DataBase):
         It includes built-in logic for 'append', 'replace', and 'merge' operations.
 
         Attributes:
-            project (str): The Google Cloud project ID associated with the client.
+            credentials: Optional credentials for authenticating with BigQuery. If not provided, the default credentials will be used.
         """
     def __init__(self, 
                  credentials = None) -> None:
@@ -41,6 +41,7 @@ class BigQuery(DataBase):
             None
         '''
         self._bq_client = bigquery.Client(credentials=credentials)
+        self.project_id = credentials.project_id if credentials else self._bq_client.project
         
     def save_table(self,
               df : pd.DataFrame,
@@ -91,7 +92,7 @@ class BigQuery(DataBase):
                 'datetime64[us]': 'DATETIME',
             }
         '''
-        dataset_id = f'{self.project}.{dataset_name}'
+        dataset_id = f'{self.project_id}.{dataset_name}'
         table_id = f"{dataset_id}.{table_name}"
         if if_exists not in ['append', 'replace', 'merge']:
             raise TypeError(f"Invalid if_exists value: {if_exists}. Choose between 'append', 'replace', or 'merge'.")
@@ -262,7 +263,7 @@ class BigQuery(DataBase):
         Returns:
             pd.DataFrame - A DataFrame containing the data from the specified BigQuery table.
         '''
-        query = f"SELECT * FROM `{self.project}.{dataset_name}.{table_name}`"
+        query = f"SELECT * FROM `{self.project_id}.{dataset_name}.{table_name}`"
         df = self._bq_client.query(query).to_arrow().to_pandas()
         #df.replace(['nan', 'None', '', 'null', 'NA', '<NA>', 'NaN', 'NAType'], np.nan, inplace=True)
         logger.info(f"{len(df)} rader lest fra BigQuery")
@@ -280,14 +281,26 @@ class BigQuery(DataBase):
         logger.info(f"Query executed: {query[:100]}... (truncated)")
         return job.result()
     
-    def query_to_df(self, query: str) -> pd.DataFrame:
+    def query_to_df(self, query: str, params : tuple[str,str,Any] = None) -> pd.DataFrame:
         '''
         Execute a BigQuery query and return the results as a DataFrame.
         Args:
             query : str - The SQL query to execute.
+            params : tuple[str,str,Any] - The parameters for the query.
         Returns:
             pd.DataFrame - A DataFrame containing the results of the query.
         '''
-        df = self._bq_client.query(query).result().to_dataframe()
+        if params:
+            if len(params) != 3:
+                raise ValueError(f"Invalid params value: {params}. Expected a tuple of (name, type, value).")
+            params_bq = [
+                bigquery.ArrayQueryParameter(
+                    params[0], params[1], params[2]
+                )
+            ]
+            query_job = self._bq_client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params_bq))
+        else:
+            query_job = self._bq_client.query(query)
+        df = query_job.to_dataframe()
         logger.info(f"Query executed and returned {len(df)} rows: {query[:100]}... (truncated)")
         return df
