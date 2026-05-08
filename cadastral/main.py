@@ -1,22 +1,18 @@
-from kartverkets_api.kartverket import kartverketsAPI
-from cadastral.helpers import BigQuery
-from google.cloud import secretmanager
+#from kartverkets_api.kartverket import kartverketsAPI
+from kartverket import kartverketsAPI
+from data_warehouse import BigQuery, load_google_credentials
 import logging
 import argparse
 import asyncio
-import pandas as pd
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from utils import setup_logging
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
-load_dotenv()
+setup_logging()
 
-if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
-    #raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud credentials JSON file.")
+load_dotenv()
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
@@ -29,7 +25,7 @@ group.add_argument("-a","--address",type = str, help = "")
 parser.add_argument("--start-date", help="The start date for the period (required with --get_by_period)")
 parser.add_argument("--end-date", help="The end date for the period (required with --get_by_period)")
 parser.add_argument("-t-type","--transfer-type",choices=["active","historical"], help="Transfer type; Choose between active or historical transfers")
-parser.add_argument("-s","--save", action="store_true", help="A boolean for storing data to Big Query")
+parser.add_argument("-s","--save", action="store_true", help="A boolean for storing data")
 parser.add_argument("-o-type","--ownership-type", type = str, choices=["eier","andel"])
 parser.add_argument("-s-num","--section-num", type = int, help = "Section number for the property. Used when asking for single address")
 parser.add_argument("-l","--limit", type = int, help = "Limit when reading in data")
@@ -38,12 +34,8 @@ type_group  = parser.add_mutually_exclusive_group(required=True)
 type_group.add_argument("-f","--fill", action="store_true", help="Fills information for missing rows")
 type_group.add_argument("-ow","--overwrite", action="store_true", help="Fills information for missing rows")
 
-secret_client = secretmanager.SecretManagerServiceClient()
-os.environ["GRUNNBOK_USERNAME"] = "sibrprod"
-os.environ["GRUNNBOK_PASSWORD"] = secret_client.access_secret_version(request={"name": "projects/sibr-market/secrets/GRUNNBOK_API_KEY/versions/latest"}).payload.data.decode("UTF-8")
 api = kartverketsAPI()
-bq = BigQuery(logger=logger,project_id="sibr-market")
-
+datawarehouse = BigQuery(credentials=load_google_credentials())
 
 async def main():
 
@@ -54,7 +46,7 @@ async def main():
         if args.by_properties:
             try:
                 df = await api.get_by_property(args.by_properties, transfer_type=args.transfer_type)
-                if args.save_bq:
+                if args.save:
                     trouble_columns = [
                         #  "oppdateringsdato_timestamp",
                         # "endretavids_cachedvalue_item",
@@ -62,11 +54,11 @@ async def main():
                     ]
                     for col in trouble_columns:
                         df[col] = df[col].astype(str)
-                    bq.to_bq(df=df,
-                             dataset_name = "admin",
-                             table_name = "kartverket")
+                    datawarehouse.save_table(df=df,
+                                             dataset_name = "admin",
+                                             table_name = "kartverket")
             except Exception as e:
-                logger.error(f'❌ Error getting properties from by_properties: {e}')
+                logger.exception(f'❌ Error getting properties from by_properties:')
 
         elif args.by_period:
             if args.start_date and args.end_date:
@@ -78,8 +70,6 @@ async def main():
             ownership_type_arg = [args.ownership_type] if args.ownership_type else ["eier", "andel",]
             if args.overwrite:
                 transfer_type_arg = ["active"]
-            #max_date = bq.read_bq("SELECT MAX (scrape_date) FROM raw.homes")
-            #max_date = max_date.iloc[0,0]
             max_date = None
             logger.info(f'🚀 Updating project | ownership={ownership_type_arg} | transfer={transfer_type_arg} | fill={args.fill} | overwrite={args.overwrite} | batch={BATCH_SIZE} | limit={args.limit}')
             for transfer_type in transfer_type_arg:
@@ -124,7 +114,7 @@ async def main():
                         query += f"\nLIMIT {args.limit}"
                     logger.info(f'📥 Reading from BQ — transfer={transfer_type}, ownership={ownership_type}')
                     #print(query)
-                    db = bq.read_bq(query)
+                    db = datawarehouse.query_to_df(query)
 
                     #TRANSFORM DATA FOR KARTVERKET
                     db = api.transform_cadastrals(db, request_cols=request_cols) if ownership_type == "eier" else api.transform_coop(db,request_cols=request_cols)
@@ -136,7 +126,7 @@ async def main():
                         try:
                             df = await api.get_by_property(properties[batch:batch+BATCH_SIZE], transfer_type=transfer_type, ownership_type=ownership_type)
                         except Exception as e:
-                            logger.error(f'❌ Error in get_by_property (batch {batch}): {e}')
+                            logger.exception(f'❌ Error in get_by_property (batch {batch}): {e}')
                             raise
 
                         logger.info(f'➡️ Input from batch kartverket API to data cleaning: {len(df)} with transfer type {transfer_type} and ownership type {ownership_type}')
@@ -144,14 +134,14 @@ async def main():
                         view = api.trim_output(df = df, db=db, request_cols=request_cols,transfer_type=transfer_type)
                         logger.info(f'⬅️  Output from data cleaning: {len(view)}')
                         if args.save:
-                            bq.to_bq(df=view,
-                                     table_name = "cadastrals",
-                                     dataset_name = "staging",
-                                     if_exists = "merge",
-                                     #if_exists="replace",
-                                     merge_on = ["id_value"],
-                                     explicit_schema = {"get_date" : "TIMESTAMP"}
-                                     )
+                            datawarehouse.save_table(df=view,
+                                                     table_name = "cadastrals",
+                                                     dataset_name = "staging",
+                                                     if_exists = "merge",
+                                                     #if_exists="replace",
+                                                     merge_on = ["id_value"],
+                                                     explicit_schema = {"get_date" : "TIMESTAMP"}
+                                                     )
                             query_to_exe = """MERGE INTO `sibr-market.staging.cadastrals` T
                                                                             USING (
                                                                               SELECT id_value
@@ -167,11 +157,9 @@ async def main():
                                                                             ON T.id_value = S.id_value
                                                                             WHEN MATCHED THEN
                                                                               UPDATE SET active = FALSE;"""
-                            bq.exe_query(query_to_exe)
-
+                            datawarehouse.exe_query(query_to_exe)
     except Exception as e:
-        logger.error(f'❌ Unexpected error: {e}')
-
+        logger.exception(f'❌ Unexpected error: {e}')
     finally:
         logger.info(f'✅ Program finished in {datetime.now() - starttime}')
         await api.close()
