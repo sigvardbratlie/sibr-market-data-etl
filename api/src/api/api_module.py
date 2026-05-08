@@ -1,27 +1,27 @@
-from .helpers import BigQuery
 import asyncio
 import pandas as pd
+import os
 from urllib.parse import quote_plus
-from .api_base import ApiBase, NotFoundError
+
 from google.cloud import firestore,secretmanager
 from concurrent.futures import ThreadPoolExecutor
+
+from .api_base import ApiBase, NotFoundError
+from data_warehouse import DataBase
+from no_sql import NoSQLDatabase
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 class DataApi(ApiBase):
-    def __init__(self,):
+    def __init__(self,
+                 datawarehouse_instance : DataBase,
+                 no_sql_instance : NoSQLDatabase,
+                 ):
         super().__init__()
-        self.bq = BigQuery(project_id = "sibr-market", logger = logger)
-        self.sv_api_key = self._get_secret("STATENS_VEGVESEN_API_KEY")
-        self.db = firestore.Client(project="sibr-market", database="backend")
-
-    # ===== COMMON GEOCODING FUNCTIONS =====
-    def _get_secret(self, secret_name):
-        client = secretmanager.SecretManagerServiceClient()
-        name = f"projects/sibr-market/secrets/{secret_name}/versions/latest"
-        response = client.access_secret_version(request={"name": name})
-        return response.payload.data.decode("UTF-8")
+        self.database =datawarehouse_instance
+        self.nosql = no_sql_instance
     
     def _encode_address(self, address):
 
@@ -45,7 +45,7 @@ class DataApi(ApiBase):
         if dataset_name is None:
             dataset_name = "staging"
 
-        self.bq.to_bq(df = df,
+        self.database.save_table(df = df,
                       table_name = table_name,
                       dataset_name = dataset_name,
                       if_exists = 'merge',
@@ -70,8 +70,6 @@ class DataApi(ApiBase):
         proxy_url = self._mk_proxy(url)
         try:
             response = await self.fetch_single(url,headers=headers,proxy_url=proxy_url)
-            # if response:
-            #     self.ok_responses += 1
 
             if isinstance(response,dict):
                 self.ok_responses += 1
@@ -235,7 +233,7 @@ class DataApi(ApiBase):
     # ===== STATENS VEGVESEN ========
     async def get_car(self,kjennemerke):
         url = f"https://www.vegvesen.no/ws/no/vegvesen/kjoretoy/felles/datautlevering/enkeltoppslag/kjoretoydata?kjennemerke={kjennemerke}"
-        headers = {"SVV-Authorization": f"Apikey {self.sv_api_key}"}
+        headers = {"SVV-Authorization": f"Apikey {os.getenv('STATENS_VEGVESEN_API_KEY')}"}
         logging_rate = 500
         try:
             response = await self.fetch_single(url, headers=headers, timeout=30)
@@ -254,137 +252,6 @@ class DataApi(ApiBase):
             logger.warning(f"⚠️ Car not found (404): kjennemerke={kjennemerke}")
             return None
 
-#     def transform_singe_car(self, response):
-#         item_id, res = response
-#         if res and isinstance(res, dict):
-#             result = res.get('kjoretoydataListe')
-#             if result and isinstance(result, list):
-#                 base = result[0]
-#                 new_base = {}
-
-#                 #WHEEL DRIVE
-#                 aksel_gruppe = base.get("godkjenning",{}).get("tekniskGodkjenning",{}).get("tekniskeData",{}).get("akslinger",{}).get("akselGruppe",{})
-#                 for aksel in aksel_gruppe:
-#                     info = aksel.get("akselListe").get("aksel",[])
-#                     if info:
-#                         info = info[0]
-#                         where = info.get("plasseringAksel")
-#                         drift = info.get("drivAksel")
-#                         if where == "1":
-#                             new_base["front_wheel_drive"] = drift
-#                         elif where == "2":
-#                             new_base["back_wheel_drive"] = drift
-
-#                 #FLATTEN
-#                 for k, v in base.items():
-#                     if isinstance(v, list) and v:
-#                         if len(v) == 1:
-#                             new_base[k] = v[0]
-#                         else:
-#                             new_base[k] = v
-#                     else:
-#                         new_base[k] = v
-#                 df = pd.json_normalize(new_base)
-#                 df["item_id"] = item_id
-
-#                 def go_deep(df):
-#                     for col in df.columns:
-#                         e = df[col].iloc[0]
-#                         if isinstance(e, list) and e:
-#                             # print(f'Column {col} has is a list')
-#                             if e:
-#                                 for element in e:
-#                                     if isinstance(element, dict) and element:
-#                                         for k, v in element.items():
-#                                             if v:
-#                                                 try:
-#                                                     df[f'{col}_{k}'] = v
-#                                                 except:
-#                                                     df[f'{col}_{k}'] = [v]
-#                                         df.drop(columns=[col], inplace=True, errors='ignore')
-#                                     elif isinstance(element, list) and element:
-#                                         print(f'Column {col} has is a list within a list')
-#                         elif isinstance(e, dict) and e:
-#                             # print(f'Column {col} has is a dict')
-#                             for k, v in e.items():
-#                                 if v:
-#                                     df[f'{col}_{k}'] = v
-#                             df.drop(columns=[col], inplace=True, errors='ignore')
-
-#                 max_len = -float("inf")
-#                 while len(df.columns) > max_len:
-#                     if len(df.columns) > max_len:
-#                         max_len = len(df.columns)
-#                     go_deep(df)
-#                 self._ensure_fieldnames(df)
-#                 return df
-#             else:
-#                 df = pd.DataFrame({"item_id": [item_id]})
-#                 return df
-#         else:
-#             df = pd.DataFrame({"item_id": [item_id]})
-#             return df
-
-#     def transform_cars(self,responses : list):
-#         if responses:
-#             res = [self.transform_singe_car(response) for response in responses if response is not None]
-#             df = pd.concat(res, ignore_index=True)
-#             self._ensure_fieldnames(df)
-#             rename = {
-#     # Direkte mappinger
-#     "item_id": "item_id",
-#     "kjoretoyId_kjennemerke": "reg_num",
-#     "kjoretoyId_understellsnummer": "vin",
-#     "forstegangsregistrering_registrertForstegangNorgeDato": "first_registration",
-#     "godkjenning_tekniskGodkjenning_kjoretoyklassifisering_nasjonalGodkjenning_nasjonaltGodkjenningsAr": "model_year",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_generelt_merke_merke": "brand",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_generelt_handelsbetegnelse": "model",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_karosseritype_kodeNavn": "body_type",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_vekter_egenvekt": "weight",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_persontall_sitteplasserTotalt": "seats",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_antallDorer": "doors",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_girkassetype_kodeBeskrivelse": "gearbox",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_vekter_tillattTilhengervektMedBrems": "trailer_weight",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_karosseriOgLasteplan_rFarge_kodeNavn": "color",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_motor_drivstoff_maksNettoEffekt": "power",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_motor_slagvolum": "engine_volume",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_motorOgDrivverk_motor_drivstoff_drivstoffKode_kodeBeskrivelse": "fuel",
-#     "godkjenning_tekniskGodkjenning_tekniskeData_miljodata_miljoOgdrivstoffGruppe_forbrukOgUtslipp_wltpKjoretoyspesifikk_rekkeviddeKmBlandetkjoring": "range",
-#     "front_wheel_drive" : "front_wheel_drive",
-#     "back_wheel_drive": "back_wheel_drive",
-#     "periodiskKjoretoyKontroll_kontrollfrist": "next_eu",
-#     "periodiskKjoretoyKontroll_sistGodkjent": "last_eu",
-
-# }
-#             df.rename(columns=rename,inplace=True,errors='ignore')
-#             cols_to_drop = df.columns.difference(rename.values())
-#             df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
-#             for col in df.columns:
-#                 if col in ["doors","seats"]:
-#                     if col in df.columns:
-#                         # df[col] = df[col].apply(lambda x: int(x[0]) if isinstance(x, list) and len(x) == 1 else x)
-#                         # df[col] = df[col].apply(lambda x: 0 if x == [] else x)
-#                         # df[col] = df[col].fillna(0)
-#                         # df[col] = df[col].astype(int)
-
-#                         df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) and x else x)
-#                         # Fyll ut manglende verdier og konverter til tall
-#                         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-
-#                 elif col in ["model_year","weight","engine_volumn","power","trailer_weight","range"]:
-#                     if col in df.columns:
-#                         df[col] = pd.to_numeric(df[col],errors='coerce')
-#                         df[col] = df[col].fillna(0)
-#                         df[col] = df[col].astype(int)
-
-#                 elif col in ["first_registration","last_eu","next_eu"]:
-#                     if col in df.columns:
-#                         df[col] = pd.to_datetime(df[col], format= "%Y-%m-%d", errors='coerce')
-
-#                 elif col in ["model"]:
-#                     df[col] = df[col].apply(lambda x: x[0] if isinstance(x, list) and len(x) == 1 else x)
-#                     df[col] = df[col].astype(str)
-#             return df
     def transform_cars(self,responses : list):
         return responses
     
@@ -397,19 +264,4 @@ class DataApi(ApiBase):
             return False
 
     def save_cars(self, responses, batch_size=200):
-        batches = []
-        batch = self.db.batch()
-        for i, (id_, data) in enumerate(responses):
-            ref = self.db.collection("statens_vegvesen").document(id_)
-            batch.set(ref, data)
-            if (i + 1) % batch_size == 0:
-                batches.append(batch)
-                batch = self.db.batch()
-        if batch:
-            batches.append(batch)
-
-        # kjør flere commits parallelt
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            results = list(executor.map(self.commit_batch, batches))
-
-        logger.info(f"📤 Committed {sum(results)}/{len(results)} batches to Firestore")
+        self.nosql.save_response(responses, batch_size=batch_size)

@@ -2,21 +2,17 @@ import os
 import asyncio
 from datetime import datetime
 import argparse
+from data_warehouse import BigQuery, load_google_credentials
+from no_sql import FirestoreDatabase
 from dotenv import load_dotenv
-from pathlib import Path
 from api import DataApi, RateLimitError
 from google.cloud import bigquery
 from google.cloud import firestore
 import logging
-import sys
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
-
 
 map_conc_requests = {"nominatim" : 5,
                      "geonorge" : 30}
@@ -29,7 +25,6 @@ parser.add_argument('--no-save', action='store_true', help='Disable saving resul
 parser.add_argument('--limit', type=int, default=None, help='Limit number of rows fetched from SQL (default: None)')
 parser.add_argument('--log-level', type=str, default='INFO', help='Logging level (default: INFO)')
 parser.add_argument('--cloud-logging', action='store_true', default=False, help='Enable cloud logging (default: False)')
-#parser.add_argument('--api', type=str, default='nominatim', help='Geocoding API to use (default: nominatim)')
 parser.add_argument("--geocoder", choices=["geonorge", "nominatim"], default="geonorge")
 parser.add_argument("-t","--task", choices=["geocode","statens-vegvesen","all"],required=True, help="Task to run")
 
@@ -38,7 +33,9 @@ if __name__ == "__main__":
         args = parser.parse_args()
         starttime = datetime.now()
 
-        api = DataApi()
+        datawarehouse = BigQuery(credentials=load_google_credentials())
+        nosql_instance = FirestoreDatabase(credentials=load_google_credentials())
+        api = DataApi(datawarehouse_instance=datawarehouse, no_sql_instance=nosql_instance)
 
         if args.task in ["geocode","all"]:
             if args.address:
@@ -70,7 +67,7 @@ if __name__ == "__main__":
                 if args.limit:
                     sql += f'\nLIMIT {args.limit}'
 
-                df = api.bq.read_bq(sql)
+                df = datawarehouse.query_to_df(sql)
                 inputs = df.set_index("item_id")["address"].to_dict()
                 try:
                     await api.get_items_with_ids(inputs,
@@ -102,7 +99,7 @@ if __name__ == "__main__":
 
                 if args.limit:
                     sql += f'\nLIMIT {args.limit}'
-                df = api.bq.read_bq(sql)
+                df = datawarehouse.query_to_df(sql)
                 inputs = df.set_index("item_id")["address"].to_dict()
                 try:
                     await api.get_items_with_ids(inputs,
@@ -117,7 +114,6 @@ if __name__ == "__main__":
                     logger.info(f'✅ Geocoding completed in {datetime.now() - starttime}')
                     await api.close()
                     
-
         if args.task in ["statens-vegvesen","all"]:
             #STATENS VEGVESEN har en request limit på 50.000 request pr dag
             bq_client = bigquery.Client()

@@ -277,6 +277,8 @@ class ApiBase:
                 try:
                     result = await future
                     count += 1
+                    self.ok_responses += 1 if result else 0
+                    self.fail_responses += 1 if not result else 0
 
                     results_to_save.append(result)
                     if count % 500 == 0:
@@ -303,9 +305,11 @@ class ApiBase:
                     raise
                 except SkipItemException as item_error:
                     logger.warning(f"⚠️ Skipping item (recoverable): {item_error}")
+                    self.fail_responses += 1
                     continue
                 except Exception as e:
                     logger.error(f"❌ Unexpected error in task loop: {e}")
+                    self.fail_responses += 1
                     continue
 
         finally:
