@@ -57,13 +57,11 @@ def ensure_num_types(df, num_types=None) -> pd.DataFrame:
 
 def transform_nan(df) -> pd.DataFrame:
     """Remove duplicates on item_id and replace null-like string values with np.nan."""
-    df = df.drop_duplicates(subset='item_id')
-    values_to_replace_map = {
-        'nan': np.nan, 'None': np.nan, '': np.nan, 'null': np.nan,
-        'NA': np.nan, 'np.nan': np.nan, '<NA>': np.nan, 'NaN': np.nan,
-        'NAType': np.nan
-    }
-    df.replace(values_to_replace_map, inplace=True)
+    df = df.drop_duplicates(subset='item_id').copy()
+    values_to_replace = ['nan', 'None', '', 'null', 'NA', 'np.nan', '<NA>', 'NaN', 'NAType']
+    cols_to_fix = df.select_dtypes(include=['object', 'string']).columns
+    df[cols_to_fix] = df[cols_to_fix].replace(values_to_replace, np.nan)
+    
     return df
 
 

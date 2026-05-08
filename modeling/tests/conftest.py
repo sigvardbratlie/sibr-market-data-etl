@@ -8,8 +8,8 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
-from base import SibrBase
+from modeling.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
+from modeling.base import SibrBase
 
 _CLEANER_MAP = {
     'cars': CarsCleaner,

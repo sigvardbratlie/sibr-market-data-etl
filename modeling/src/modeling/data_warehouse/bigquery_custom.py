@@ -7,8 +7,9 @@ logger = logging.getLogger(__name__)
 
 class CustomBigQuery(BigQuery):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,dataset: str = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.dataset = dataset
 
     def read_raw(self, dataset: str = None, replace=False, limit=None, ) -> pd.DataFrame:
         if not dataset:
@@ -40,10 +41,10 @@ class CustomBigQuery(BigQuery):
         if limit:
             sql += f' LIMIT {limit}'
         logger.info(f"📥 Reading raw data from raw.{dataset}")
-        return self.read_bq(sql)
+        return self.query_to_df(sql)
 
     def read_geonorge(self):
-        return self.read_bq('SELECT * FROM admin.geo_norge_old')
+        return self.query_to_df('SELECT * FROM admin.geo_norge_old')
 
     def read_clean(self, dataset: str = None, replace=False, limit=None) -> pd.DataFrame:
         if not dataset:
@@ -61,7 +62,7 @@ class CustomBigQuery(BigQuery):
         if limit:
             sql += f' LIMIT {limit}'
         logger.info(f"📥 Reading clean data from clean.{dataset}")
-        return self.read_bq(sql)
+        return self.query_to_df(sql)
 
     def read_oslo(self, query=None, dataset_name=None, task=None):
         if query is None and dataset_name is None:
@@ -97,7 +98,7 @@ class CustomBigQuery(BigQuery):
             else:
                 raise ValueError(f'Invalid task: {task}. Choose between "train" or "predict"')
 
-        df = self.read_bq(query)
+        df = self.query_to_df(query)
         if not 'district_name' in df.columns:
             raise ImportError(f'The imported dataframe must contain district names')
         df['district_name'] = df['district_name'].fillna('Unknown')
@@ -148,7 +149,7 @@ class CustomBigQuery(BigQuery):
 
         if debug_query:
             print(sql)
-        df = self.read_bq(sql)
+        df = self.query_to_df(sql)
         if 'item_id' not in df.columns:
             raise ValueError(
                 f"DataFrame inneholder ikke 'item_id'-kolonnen. Tilgjengelige kolonner: {df.columns.tolist()}")
@@ -239,7 +240,7 @@ class CustomBigQuery(BigQuery):
                 query += f"LIMIT {limit}"
             if debug_query:
                 print(query)
-            df = self.read_bq(query)
+            df = self.query_to_df(query)
             return df
 
         def prep_data(df, unimportant_columns=None):
@@ -306,7 +307,7 @@ class CustomBigQuery(BigQuery):
                 query_oslo += f"LIMIT {limit}"
             if debug_query:
                 print(query_oslo)
-            df_o = self.read_bq(query_oslo)
+            df_o = self.query_to_df(query_oslo)
             df_o = prep_data(df_o, unimportant_columns=unimportant_columns)
             df_o = pd.get_dummies(data=df_o, columns=['district_name'])
             return df_o
@@ -376,7 +377,7 @@ class CustomBigQuery(BigQuery):
                         , a.day) = (SELECT MAX(scrape_date) FROM sibr-market.raw.homes)
                         ,
                     """
-            df_r = self.read_bq(query=query)
+            df_r = self.query_to_df(query=query)
             df_r = prep_data(df_r, unimportant_columns=unimportant_columns)
             df_r = pd.get_dummies(data=df_r, columns=['district_name'])
             if "primary_area" in df_r.columns:
@@ -425,7 +426,7 @@ class CustomBigQuery(BigQuery):
                 query += f"LIMIT {limit}"
             if debug_query:
                 print(query)
-            df = self.read_bq(query)
+            df = self.query_to_df(query)
             return df
 
         def prep_data(df, unimportant_columns=None, drop_hybel=False):
@@ -466,7 +467,7 @@ class CustomBigQuery(BigQuery):
                 query_oslo += f"LIMIT {limit}"
             if debug_query:
                 print(query_oslo)
-            df_o = self.read_bq(query_oslo)
+            df_o = self.query_to_df(query_oslo)
             df_o = prep_data(df_o, unimportant_columns=unimportant_columns, drop_hybel=drop_hybel)
             df_o = pd.get_dummies(data=df_o, columns=['district_name'])
             return df_o

@@ -1,9 +1,9 @@
 import argparse
 import os
 from pathlib import Path
-from cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
-from training import Train
-from predictions import Predict
+from modeling.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
+from modeling.training import Train
+from modeling.predictions import Predict
 import logging
 from dotenv import load_dotenv
 
@@ -35,8 +35,8 @@ def main():
     parser = argparse.ArgumentParser(description="Run data processing and training pipelines for SIBR Market.")
 
     # 3. Bruk action='store_true' for boolean-flagg
-    parser.add_argument('--dataset', type=str, choices=SUPPORTED_DATASETS, help=f'Dataset name. Choose from: {SUPPORTED_DATASETS}')
-    parser.add_argument('--task', type=str, choices = TASK_CHOICES, help=f"Specific task to run. Choises {TASK_CHOICES}")
+    parser.add_argument("-d",'--dataset', type=str, choices=SUPPORTED_DATASETS, help=f'Dataset name. Choose from: {SUPPORTED_DATASETS}')
+    parser.add_argument("-t",'--task', type=str, choices = TASK_CHOICES, help=f"Specific task to run. Choises {TASK_CHOICES}")
 
     # Flagg for å styre kjøring
     parser.add_argument('--run_all', action='store_true', help='Run all tasks for cars and homes except training. To also run training, use --task train or --run_train.')
@@ -135,7 +135,7 @@ def main():
 
         logger.info(f"▶️  Task '{args.task}' | dataset '{args.dataset}'")
         if args.task in ['clean', 'pre_processed']:
-            cleaner = CLEANER_MAP[args.dataset](logger=logger)
+            cleaner = CLEANER_MAP[args.dataset]()
             cleaner.run(task=args.task, save_to_bq=save_to_bq, replace=args.replace)
         elif args.task == 'train':
             train = Train(dataset=args.dataset, logger=logger)

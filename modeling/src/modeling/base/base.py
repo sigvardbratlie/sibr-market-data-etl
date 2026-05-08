@@ -2,7 +2,7 @@ import os
 import json
 import joblib
 from google.cloud import storage
-from ..data_warehouse.bigquery_custom import CustomBigQuery
+from modeling.data_warehouse import CustomBigQuery, load_google_credentials
 
 import logging
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class SibrBase:
             raise ValueError("Task name must be one of: 'admin', 'clean', 'pre_processed', 'raw', 'predictions'.")
 
     def setup(self):
-        self.bq = CustomBigQuery(project_id=self._project_id, dataset=self.dataset)
+        self.bq = CustomBigQuery(credentials = load_google_credentials(), dataset=self._dataset)
         gcs = storage.Client(project=self._project_id)
         self._bucket = gcs.bucket(self._bucket_name)
         logger.debug(f'Dataset: {self.dataset} | | Replace: {self.replace}')

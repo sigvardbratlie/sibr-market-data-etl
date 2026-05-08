@@ -12,7 +12,7 @@ def add_file_handler(filename='log/app.log',format : str = '%(asctime)s - %(name
                                     backupCount=3, 
                                     encoding="utf-8"
                                 )
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(format)
     file_handler.setFormatter(formatter)
     logging.root.addHandler(file_handler)
@@ -26,7 +26,7 @@ def add_stream_handler(format : str = '%(asctime)s - %(name)s - %(levelname)s - 
 
 def setup_logging():
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=format)
+    logging.basicConfig(level=logging.DEBUG, format=format)
     add_file_handler(format=format)
     add_stream_handler(format=format)
     
