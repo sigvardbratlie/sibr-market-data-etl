@@ -10,7 +10,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_squared_error, r2_score
 from xgboost import XGBRegressor
 from catboost import CatBoostRegressor
-from ..base import SibrBase
+from base import SibrBase
 
 import logging
 logger = logging.getLogger(__name__)

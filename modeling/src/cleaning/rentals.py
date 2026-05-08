@@ -1,5 +1,5 @@
 import pandas as pd
-from ..base import SibrBase
+from base import SibrBase
 from .transformers import extract_postnummer, extract_datetime
 from .feature_builder import (
     mk_num, mk_cat, mk_fractions, mk_bool_features,

@@ -1,9 +1,9 @@
 import argparse
 import os
 from pathlib import Path
-from src.cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
-from src.training import Train
-from src.predictions import Predict
+from cleaning import CarsCleaner, HomesCleaner, RentalsCleaner, NewHomesCleaner
+from training import Train
+from predictions import Predict
 import logging
 from dotenv import load_dotenv
 

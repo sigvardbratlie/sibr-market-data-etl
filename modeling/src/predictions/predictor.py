@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import sklearn
-from ..base import SibrBase
+from base import SibrBase
 
 import logging
 logger = logging.getLogger(__name__)
