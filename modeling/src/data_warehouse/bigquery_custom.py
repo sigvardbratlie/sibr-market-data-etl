@@ -1,4 +1,4 @@
-from .helpers import BigQuery
+from .bigquery import BigQuery
 import pandas as pd
 from typing import Literal
 
