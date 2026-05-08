@@ -46,19 +46,21 @@ async def main():
         if args.by_properties:
             try:
                 df = await api.get_by_property(args.by_properties, transfer_type=args.transfer_type)
-                if args.save:
-                    trouble_columns = [
-                        #  "oppdateringsdato_timestamp",
-                        # "endretavids_cachedvalue_item",
-                        "omsetning_omsatteregisterenhetsretter_item"
-                    ]
-                    for col in trouble_columns:
-                        df[col] = df[col].astype(str)
-                    datawarehouse.save_table(df=df,
-                                             dataset_name = "admin",
-                                             table_name = "kartverket")
             except Exception as e:
                 logger.exception(f'❌ Error getting properties from by_properties:')
+            
+            if args.save and df and not df.empty:
+                trouble_columns = [
+                    #  "oppdateringsdato_timestamp",
+                    # "endretavids_cachedvalue_item",
+                    "omsetning_omsatteregisterenhetsretter_item"
+                ]
+                for col in trouble_columns:
+                    df[col] = df[col].astype(str)
+                datawarehouse.save_table(df=df,
+                                            dataset_name = "admin",
+                                            table_name = "kartverket")
+            
 
         elif args.by_period:
             if args.start_date and args.end_date:
