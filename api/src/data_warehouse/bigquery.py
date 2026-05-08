@@ -269,26 +269,13 @@ class BigQuery(DataBase):
         logger.info(f"{len(df)} rader lest fra BigQuery")
         return df
 
-    def exe_query(self, query : str) -> bigquery.QueryJob:
+    def exe_query(self, query : str, params : tuple[str,str,Any] = None):
         '''
         Execute a BigQuery query
         Args:
             query : str - The SQL query to execute.
         Returns:
             bigquery.QueryJob - The query job object.
-        '''
-        job = self._bq_client.query(query)
-        logger.info(f"Query executed: {query[:100]}... (truncated)")
-        return job.result()
-    
-    def query_to_df(self, query: str, params : tuple[str,str,Any] = None) -> pd.DataFrame:
-        '''
-        Execute a BigQuery query and return the results as a DataFrame.
-        Args:
-            query : str - The SQL query to execute.
-            params : tuple[str,str,Any] - The parameters for the query.
-        Returns:
-            pd.DataFrame - A DataFrame containing the results of the query.
         '''
         if params:
             if len(params) != 3:
@@ -301,6 +288,20 @@ class BigQuery(DataBase):
             query_job = self._bq_client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params_bq))
         else:
             query_job = self._bq_client.query(query)
+        
+        logger.debug(f"Executing Query: {query[:100]}... (truncated)")
+        return query_job.result()
+    
+    def query_to_df(self, query: str, params : tuple[str,str,Any] = None) -> pd.DataFrame:
+        '''
+        Execute a BigQuery query and return the results as a DataFrame.
+        Args:
+            query : str - The SQL query to execute.
+            params : tuple[str,str,Any] - The parameters for the query.
+        Returns:
+            pd.DataFrame - A DataFrame containing the results of the query.
+        '''
+        query_job = self.exe_query(query, params)
         df = query_job.to_dataframe()
         logger.info(f"Query executed and returned {len(df)} rows: {query[:100]}... (truncated)")
         return df
