@@ -14,7 +14,9 @@ import argparse
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from utils import setup_logging
 logger = logging.getLogger(__name__)
+setup_logging()
 
 load_dotenv()
 if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
@@ -30,7 +32,7 @@ map_spiders = {'homes': HomeSpider,
             'new_homes': NewHomeSpider}
 
 parser = argparse.ArgumentParser(description='Run Finn scraper spiders.')
-parser.add_argument('--spiders',
+parser.add_argument('-s', '--spiders',
                     nargs='*',
                     choices=map_spiders.keys(),
                     default=list(map_spiders.keys()),)
@@ -42,7 +44,6 @@ parser.add_argument('--other-urls',
                     nargs='*',
                     help='Other URLs to scrape. Needs to be front page url from finn.no')
 parser.add_argument('--log_level',default='INFO',help='Set the logging level (default: INFO)')
-parser.add_argument('--cloud_logging',action='store_true',help='Enable cloud logging')
 
 args = parser.parse_args()
 
@@ -54,7 +55,6 @@ if __name__ == "__main__":
     configure_logging(install_root_handler=False)
     settings = get_project_settings()
     settings.set('LOG_LEVEL', args.log_level.upper())
-    settings.set('CLOUD_LOGGING_ENABLED', args.cloud_logging)
     for handler in logging.getLogger().handlers:
         handler.setLevel(getattr(logging,args.log_level.upper(), logging.INFO))
 
