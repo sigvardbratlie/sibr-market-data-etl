@@ -83,13 +83,13 @@ class SibrBase:
             raise ValueError(
                 f'Task name "{self.task_name}" is not allowed for saving data. Must be one of: "admin", "clean", "pre_processed", "raw", "predictions".')
         if self.replace:
-            self.bq.to_bq(df,
+            self.bq.save_table(df,
                           table_name=table_name,
                           dataset_name=self.task_name,
                           if_exists='replace',
                           explicit_schema=explicit_schema)
         else:
-            self.bq.to_bq(df,
+            self.bq.save_table(df,
                           table_name=table_name,
                           dataset_name=self.task_name,
                           if_exists='merge',
