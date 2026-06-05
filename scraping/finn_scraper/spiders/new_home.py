@@ -11,9 +11,9 @@ class NewHomeSpider(FinnBaseSpider):
     start_urls = [
                 'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.22042&location=0.20007', #agder og buskerud
                 'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20020&location=0.22034&location=0.20015&location=0.20018', #Finnmark, Møre og Romsdal, Nordland, Innlandet,
-                'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20061&location=0.20009&location=0.20019&location=0.20008' #oslo, telemark, troms og vestfold,
-                'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20012' #Rogoland,
-                'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20016' #Trøndelag,
+                'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20061&location=0.20009&location=0.20019&location=0.20008', #oslo, telemark, troms og vestfold,
+                'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20012', #Rogoland,
+                'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.20016', #Trøndelag,
                 'https://www.finn.no/realestate/newbuildings/search.html?filters=&location=0.22046&location=0.20002', #vestlandet og østfold
                 'https://www.finn.no/realestate/homes/search.html?filters=&is_new_property=true&location=1.20003.20041&location=1.20003.20039&location=1.20003.20056&location=1.20003.20050&location=1.20003.22104&location=1.20003.20054&location=1.20003.20043&location=1.20003.20057&location=1.20003.20059',
                 'https://www.finn.no/realestate/homes/search.html?filters=&is_new_property=true&location=1.20003.20052&location=1.20003.20100&location=1.20003.20099&location=1.20003.22105&location=1.20003.20060&location=1.20003.20055&location=1.20003.20042&location=1.20003.20051&location=1.20003.20058&location=1.20003.20045&location=1.20003.20047&location=1.20003.20046',
@@ -24,7 +24,7 @@ class NewHomeSpider(FinnBaseSpider):
             self.start_urls = other_urls
         else:
             self.start_urls = self.start_urls
-    use_playwright_listing = False
+    use_playwright_listings = False
     use_playwright_items = False
 
     custom_settings = {**FinnBaseSpider.custom_settings,

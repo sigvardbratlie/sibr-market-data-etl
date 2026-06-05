@@ -10,6 +10,11 @@ class FinnBaseSpider(scrapy.Spider):
     use_playwright_items = False
     use_proxy = False
     count = 0
+    listing_article_selector = (
+        'article.sf-search-ad, '
+        'article[data-testid="search-result-ad"], '
+        'article[data-testid="search-result-item"]'
+    )
 
     custom_settings = {
         'DOWNLOAD_HANDLERS': {
@@ -110,10 +115,18 @@ class FinnBaseSpider(scrapy.Spider):
         self.logger.error(repr(failure))
 
     async def start(self):
+        if not self.start_urls:
+            self.logger.warning("No start URLs configured for spider %s", self.name)
         for url in self.start_urls:
+            if not url or not url.startswith(("http://", "https://")):
+                self.logger.warning("Skipping malformed start URL: %s", url)
+                continue
+            if url.count("http://") + url.count("https://") > 1:
+                self.logger.warning("Skipping malformed start URL (multiple schemes): %s", url)
+                continue
             meta = {'errback': self.errback}
 
-            if "ad.html" in url:
+            if "ad.html" in url or "/mobility/item/" in url:
                 if self.use_playwright_items:
                     meta['playwright'] = True
                     meta['playwright_include_page'] = True
@@ -124,7 +137,7 @@ class FinnBaseSpider(scrapy.Spider):
                     meta['playwright'] = True
                     meta['playwright_include_page'] = True
                     meta['playwright_page_methods'] = [
-                        PageMethod('wait_for_selector', 'article.sf-search-ad'),
+                        PageMethod('wait_for_selector', self.listing_article_selector),
                         PageMethod('wait_for_load_state', 'networkidle')]
                 if self.use_proxy:
                     meta['proxy'] = 'http://sigvarbrat49411:jgytj0vcj8@154.21.32.105:21309'
@@ -140,6 +153,21 @@ class FinnBaseSpider(scrapy.Spider):
         if self.count % 500 == 0:
             self.logger.info(f'Processed {self.count} listings so far. Processing {response.url}')
         article_urls = self.get_listing_urls(response)
+        if not article_urls:
+            title = response.css('title::text').get()
+            selector_counts = {
+                "articles": len(response.css(self.listing_article_selector)),
+                "ad_links": len(response.css('a[href*="ad.html"], a[href*="/mobility/item/"]')),
+            }
+            self.logger.warning(
+                "No listing URLs found on %s (status=%s, title=%r). Selector counts: %s",
+                response.url,
+                response.status,
+                title,
+                selector_counts,
+            )
+        else:
+            self.logger.debug("Found %d listing URLs on %s", len(article_urls), response.url)
         for url in article_urls:
             meta = {'errback': self.errback}
             if self.use_playwright_items:
@@ -154,11 +182,25 @@ class FinnBaseSpider(scrapy.Spider):
 
     def get_listing_urls(self, response):
         """Extract item URLs from a listing page. Override in subclasses with different HTML."""
-        return [
-            response.urljoin(article.css('h2 a::attr(href)').get())
-            for article in response.css('article.sf-search-ad')
-            if article.css('h2 a::attr(href)').get()
-        ]
+        urls = []
+        articles = response.css(self.listing_article_selector)
+        if articles:
+            for article in articles:
+                href = article.css(
+                    'a[data-testid="search-result-title"]::attr(href), '
+                    'h2 a::attr(href), '
+                    'a::attr(href)'
+                ).get()
+                if href:
+                    urls.append(response.urljoin(href))
+            if urls:
+                return list(dict.fromkeys(urls))
+
+        hrefs = response.css('a[href*="ad.html"], a[href*="/mobility/item/"]::attr(href)').getall()
+        if hrefs:
+            return list(dict.fromkeys(response.urljoin(href) for href in hrefs if href))
+
+        return []
 
     async def parse(self, response):
         raise NotImplementedError("You must implement the parse method in your spider")
@@ -191,6 +233,6 @@ class FinnBaseSpider(scrapy.Spider):
             meta['playwright'] = True
             meta['playwright_include_page'] = True
             meta['playwright_page_methods'] = [
-                PageMethod('wait_for_selector', 'article.sf-search-ad'),
+                PageMethod('wait_for_selector', self.listing_article_selector),
                 PageMethod('wait_for_load_state', 'networkidle')]
         return scrapy.Request(url=next_page_url, meta=meta, callback=self.parse_listings_page)

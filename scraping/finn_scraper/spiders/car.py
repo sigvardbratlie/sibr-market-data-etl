@@ -9,38 +9,38 @@ class CarSpider(FinnBaseSpider):
     name = "car"
     _table_name = "cars"
     start_urls = [
-                    'https://www.finn.no/mobility/search/car?dealer_segment=1&dealer_segment=3&make=0.744&registration_class=1', #AUDI
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.744&registration_class=1', #AUDI
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.749&registration_class=1', #BMW
-                  'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.749&registration_class=1', #BWW
-                  'https://www.finn.no/mobility/search/car?dealer_segment=3&make=0.749&registration_class=1', #BMW
-                  'https://www.finn.no/mobility/search/car?make=0.757&make=0.772&registration_class=1', #hyandai og citroen,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.767&registration_class=1', #FORD,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=1&dealer_segment=3&make=0.767&registration_class=1', #FORD,
-                  'https://www.finn.no/mobility/search/car?make=0.777&make=0.784&registration_class=1', #KIA og MAZDA,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.785&registration_class=1', #MERCEDES
-                  'https://www.finn.no/mobility/search/car?dealer_segment=1&dealer_segment=3&make=0.785&registration_class=1', #MERCEDES,
-                  'https://www.finn.no/mobility/search/car?make=0.787&make=0.795&registration_class=1', #MITSUBISHI og OPEL,
-                  'https://www.finn.no/mobility/search/car?make=0.792&make=0.804&registration_class=1', #NISSAN og RENAULT,
-                  'https://www.finn.no/mobility/search/car?make=0.796&make=0.811&registration_class=1', #PEUGEOT og SUZUKI,
-                  'https://www.finn.no/mobility/search/car?make=0.801&registration_class=1' ,#Prosche,
-                  'https://www.finn.no/mobility/search/car?make=0.808&registration_class=1',#SKODA,
-                  'https://www.finn.no/mobility/search/car?make=0.8078&registration_class=1', #TESLA,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&dealer_segment=3&make=0.813&registration_class=1', #TOYOTA
-                  'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.813&registration_class=1', #TOYOTA,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.817&registration_class=1', #VOLKSWAGEN
-                  'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.817&registration_class=1' ,#VOLKSWAGEN,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=3&make=0.817&registration_class=1', #VOLKSWAGEN,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.818&registration_class=1', #VOLVO,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.818&registration_class=1', #VOLVO,
-                  'https://www.finn.no/mobility/search/car?dealer_segment=3&make=0.818&registration_class=1', #VOLVO,
-                  'https://www.finn.no/mobility/search/car?make=0.8101&make=0.753&make=0.8106&make=0.764&make=0.766&make=0.8107&make=0.775&make=0.776&make=0.2000649&registration_class=1', #OTHER BRANDS
-                  'https://www.finn.no/mobility/search/car?make=0.6731&make=0.781&make=0.782&make=0.7191&make=0.7153&make=0.3001&make=0.8109&make=0.8102&make=0.7170&make=0.806&make=0.810&make=0.8112&make=0.8104&registration_class=1', #OTHER BRANDS,
-                    'https://www.finn.no/mobility/search/car?make=0.8101&make=0.753&make=0.764&make=0.766&make=0.767&make=0.7179&make=0.7280&make=0.2000649&make=0.781&make=0.8096&make=0.787&registration_class=2', #OTHER BRANDS, VAREBIL,
-                    'https://www.finn.no/mobility/search/car?make=0.792&make=0.795&make=0.796&make=0.804&make=0.7190&make=0.810&make=0.811&make=0.200820&make=0.2252&make=0.818&registration_class=2', #OTHER BRANDS, VAREBIL
-                    'https://www.finn.no/mobility/search/car?make=0.8100&make=0.757&make=0.785&make=0.796&registration_class=2',
-                    "https://www.finn.no/mobility/search/car?make=0.813&registration_class=2", # TOYOTA, VAREBIL
-                    "https://www.finn.no/mobility/search/car?make=0.817&registration_class=2", # VOLKSWAGEN, VAREBIL
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&dealer_segment=3&make=0.744&registration_class=1', #AUDI
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.744&registration_class=1', #AUDI
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.749&registration_class=1', #BMW
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.749&registration_class=1', #BWW
+                'https://www.finn.no/mobility/search/car?dealer_segment=3&make=0.749&registration_class=1', #BMW
+                'https://www.finn.no/mobility/search/car?make=0.757&make=0.772&registration_class=1', #hyandai og citroen,
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.767&registration_class=1', #FORD,
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&dealer_segment=3&make=0.767&registration_class=1', #FORD,
+                'https://www.finn.no/mobility/search/car?make=0.777&make=0.784&registration_class=1', #KIA og MAZDA,
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.785&registration_class=1', #MERCEDES
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&dealer_segment=3&make=0.785&registration_class=1', #MERCEDES,
+                'https://www.finn.no/mobility/search/car?make=0.787&make=0.795&registration_class=1', #MITSUBISHI og OPEL,
+                'https://www.finn.no/mobility/search/car?make=0.792&make=0.804&registration_class=1', #NISSAN og RENAULT,
+                'https://www.finn.no/mobility/search/car?make=0.796&make=0.811&registration_class=1', #PEUGEOT og SUZUKI,
+                'https://www.finn.no/mobility/search/car?make=0.801&registration_class=1', #Prosche,
+                'https://www.finn.no/mobility/search/car?make=0.808&registration_class=1', #SKODA,
+                'https://www.finn.no/mobility/search/car?make=0.8078&registration_class=1', #TESLA,
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&dealer_segment=3&make=0.813&registration_class=1', #TOYOTA
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.813&registration_class=1', #TOYOTA,
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.817&registration_class=1', #VOLKSWAGEN
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.817&registration_class=1', #VOLKSWAGEN,
+                'https://www.finn.no/mobility/search/car?dealer_segment=3&make=0.817&registration_class=1', #VOLKSWAGEN,
+                'https://www.finn.no/mobility/search/car?dealer_segment=1&make=0.818&registration_class=1', #VOLVO,
+                'https://www.finn.no/mobility/search/car?dealer_segment=2&make=0.818&registration_class=1', #VOLVO,
+                'https://www.finn.no/mobility/search/car?dealer_segment=3&make=0.818&registration_class=1', #VOLVO,
+                'https://www.finn.no/mobility/search/car?make=0.8101&make=0.753&make=0.8106&make=0.764&make=0.766&make=0.8107&make=0.775&make=0.776&make=0.2000649&registration_class=1', #OTHER BRANDS
+                'https://www.finn.no/mobility/search/car?make=0.6731&make=0.781&make=0.782&make=0.7191&make=0.7153&make=0.3001&make=0.8109&make=0.8102&make=0.7170&make=0.806&make=0.810&make=0.8112&make=0.8104&registration_class=1', #OTHER BRANDS,
+                'https://www.finn.no/mobility/search/car?make=0.8101&make=0.753&make=0.764&make=0.766&make=0.767&make=0.7179&make=0.7280&make=0.2000649&make=0.781&make=0.8096&make=0.787&registration_class=2', #OTHER BRANDS, VAREBIL,
+                'https://www.finn.no/mobility/search/car?make=0.792&make=0.795&make=0.796&make=0.804&make=0.7190&make=0.810&make=0.811&make=0.200820&make=0.2252&make=0.818&registration_class=2', #OTHER BRANDS, VAREBIL
+                'https://www.finn.no/mobility/search/car?make=0.8100&make=0.757&make=0.785&make=0.796&registration_class=2',
+                "https://www.finn.no/mobility/search/car?make=0.813&registration_class=2", # TOYOTA, VAREBIL
+                "https://www.finn.no/mobility/search/car?make=0.817&registration_class=2", # VOLKSWAGEN, VAREBIL
                   ]
     def __init__(self, *args, other_urls=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,7 +48,7 @@ class CarSpider(FinnBaseSpider):
             self.start_urls = other_urls
         else:
             self.start_urls = self.start_urls
-    use_playwright_listing = False
+    use_playwright_listings = False
     use_playwright_items = False
 
     custom_settings = {**FinnBaseSpider.custom_settings,

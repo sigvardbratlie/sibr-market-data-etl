@@ -23,7 +23,7 @@ class BoatSpider(FinnBaseSpider):
             self.start_urls = other_urls
         else:
             self.start_urls = self.start_urls
-    use_playwright_listing = False
+    use_playwright_listings = False
     use_playwright_items = False
 
     custom_settings = {**FinnBaseSpider.custom_settings,
