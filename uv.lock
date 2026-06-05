@@ -2556,7 +2556,6 @@ dependencies = [
     { name = "pandas" },
     { name = "pandas-gbq" },
     { name = "pyjstat" },
-    { name = "pyspark" },
     { name = "pytest" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
@@ -2606,7 +2605,6 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pandas-gbq", specifier = ">=0.29.2" },
     { name = "pyjstat", specifier = ">=2.4.0" },
-    { name = "pyspark", specifier = ">=4.1.1" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -3899,16 +3897,6 @@ name = "pypydispatcher"
 version = "2.1.2"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d5/7b/65f55513d3c769fd677f90032d8d8703e3dc17e88a41b6074d2177548bca/PyPyDispatcher-2.1.2.tar.gz", hash = "sha256:b6bec5dfcff9d2535bca2b23c80eae367b1ac250a645106948d315fcfa9130f2", size = 23224, upload-time = "2017-07-03T14:20:51.806Z" }
-
-[[package]]
-name = "pyspark"
-version = "4.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "py4j", version = "0.10.9.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "py4j", version = "0.10.9.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/19/bf/58ee13add151469c25825b7125bbf62c3bdcec05eec4d458fcb5c5516066/pyspark-4.1.1.tar.gz", hash = "sha256:77f78984aa84fbe865c717dd37b49913b4e5c97d76ef6824f932f1aefa6621ec", size = 455359625, upload-time = "2026-01-09T09:38:38.28Z" }
 
 [[package]]
 name = "pytest"
