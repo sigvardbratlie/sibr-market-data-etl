@@ -7,8 +7,8 @@ from google.cloud import firestore,secretmanager
 from concurrent.futures import ThreadPoolExecutor
 
 from .api_base import ApiBase, NotFoundError
-from data_warehouse import DataBase
-from no_sql import NoSQLDatabase
+from api.data_warehouse import DataBase
+from api.no_sql import NoSQLDatabase
 
 import logging
 

@@ -20,7 +20,8 @@ class FirestoreDatabase(NoSQLDatabase):
         if batch:
             batches.append(batch)
 
-        self.db.commit_batches(batches)
+        for b in batches:
+            b.commit()
         logger.info(f"Saved {len(responses)} responses to Firestore in {len(batches)} batches.")
 
     def fetch_collection_ids(self, collection_name):

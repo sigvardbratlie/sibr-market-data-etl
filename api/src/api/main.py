@@ -1,15 +1,12 @@
-import os
 import asyncio
 from datetime import datetime
 import argparse
-from data_warehouse import BigQuery, load_google_credentials
-from no_sql import FirestoreDatabase
+from api.data_warehouse import BigQuery, load_google_credentials
+from api.no_sql import FirestoreDatabase
 from dotenv import load_dotenv
-from api import DataApi, RateLimitError
-from google.cloud import bigquery
-from google.cloud import firestore
+from api.core import DataApi, RateLimitError
 import logging
-from utils import setup_logging
+from api.utils import setup_logging
 logger = logging.getLogger(__name__)
 setup_logging()
 

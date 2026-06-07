@@ -14,7 +14,7 @@ import argparse
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from utils import setup_logging
+from scraping.utils import setup_logging
 logger = logging.getLogger(__name__)
 setup_logging()
 

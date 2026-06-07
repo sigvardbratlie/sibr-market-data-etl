@@ -7,7 +7,7 @@ from google.cloud import storage
 import os
 from models.request import *
 from .storage_base import BaseStorageManager
-from utils import AppConfig
+from api.utils import AppConfig
 from google.auth.credentials import Credentials as GoogleCredentials
 from auth import load_google_credentials
 

@@ -1,14 +1,16 @@
 #from kartverkets_api.kartverket import kartverketsAPI
-from kartverket import kartverketsAPI
-from data_warehouse import BigQuery, load_google_credentials
+from cadastral.kartverket import kartverketsAPI
+from api.data_warehouse import BigQuery, load_google_credentials
 import logging
 import argparse
 import asyncio
 import os
 from dotenv import load_dotenv
 from datetime import datetime
-from utils import setup_logging
+from cadastral.utils import setup_logging
+
 logging.getLogger("httpx").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 setup_logging()
 

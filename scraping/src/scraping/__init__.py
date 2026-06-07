@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from scraping!")
+from . import utils
+
+__all__ = ["utils"]
