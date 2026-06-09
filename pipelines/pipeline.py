@@ -53,7 +53,7 @@ def run_scraping():
 def run_api(): # Endret
     return dsl.ContainerSpec(
         image=mk_image_uri("api"),
-        command=['python', 'main.py'],
+        command=['python', "-m", 'api.main'],
         args = ["--task", "all"]
     )
 
@@ -61,7 +61,7 @@ def run_api(): # Endret
 def run_predict(): # Endret
     return dsl.ContainerSpec(
         image=mk_image_uri("modeling"),
-        command=['python', 'main.py'],
+        command=['python', "-m", 'modeling.main'],
         args=['--run-predict']
     )
 
@@ -69,7 +69,7 @@ def run_predict(): # Endret
 def run_clean(): # Endret
     return dsl.ContainerSpec(
         image=mk_image_uri("modeling"),
-        command=['python', 'main.py'],
+        command=['python', "-m", 'modeling.main'],
         args=['--run-clean']
     )
 
@@ -77,7 +77,7 @@ def run_clean(): # Endret
 def run_cadastral(): # Endret
     return dsl.ContainerSpec(
         image=mk_image_uri("cadastral"),
-        command=['python', 'main.py'],
+        command=['python', "-m", 'cadastral.main'],
         args = ["-up", "-s","-ow"]
     )
 
