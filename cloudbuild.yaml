@@ -1,6 +1,17 @@
 options:
   logging: CLOUD_LOGGING_ONLY
 
+availableSecrets:
+  secretManager:
+  - versionName: projects/sibr-market/secrets/scraping-env/versions/latest
+    env: 'SCRAPING_ENV'
+  - versionName: projects/sibr-market/secrets/modeling-env/versions/latest
+    env: 'MODELING_ENV'
+  - versionName: projects/sibr-market/secrets/api-env/versions/latest
+    env: 'API_ENV'
+  - versionName: projects/sibr-market/secrets/cadastral-env/versions/latest
+    env: 'CADASTRAL_ENV'
+
 steps:
 # STEP 0: Check the commit message.
 - name: 'gcr.io/cloud-builders/git' # <-- THIS IS THE FIX. Use the official git image.
@@ -81,6 +92,7 @@ steps:
 - name: 'python:3.11'
   id: 'deploy-pipeline'
   waitFor: ['push-scraping', 'push-modeling',"push-api","push-cadastral"]
+  secretEnv: ['SCRAPING_ENV', 'MODELING_ENV', 'API_ENV', 'CADASTRAL_ENV']
   entrypoint: 'bash'
   args:
   - '-c'

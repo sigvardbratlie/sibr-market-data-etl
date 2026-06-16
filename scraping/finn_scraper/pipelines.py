@@ -1,8 +1,11 @@
+from base64 import b64decode
+import json
+
 from google.cloud import bigquery
 import pandas as pd
 from itemadapter import ItemAdapter
 import os
-
+from google.oauth2 import service_account
 # Define your item pipelines here
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
@@ -152,10 +155,17 @@ class BQPipeline:
             batch_size = crawler.settings.getint('BQ_BATCH_SIZE',2500),
             project = crawler.settings.get('GOOGLE_CLOUD_PROJECT')
         )
+    
+    def load_google_credentials(self):
+        string = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+        decoded_bytes = b64decode(string.encode("utf-8"))
+        json_content = decoded_bytes.decode("utf-8")
+        credentials = service_account.Credentials.from_service_account_info(json.loads(json_content))
+        return credentials
 
     def open_spider(self,spider):
         spider.logger.info('🚀 BQ Pipeline started')
-        self.client = bigquery.Client(project=self.project)
+        self.client = bigquery.Client(credentials=self.load_google_credentials())
         self.dataset_id = f'raw'
         self.table_id = f"{self.dataset_id}.{spider.table_name}"
         spider.logger.info(f'📋 Project: {self.project} | Table: {self.table_id}')

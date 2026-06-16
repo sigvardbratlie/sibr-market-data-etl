@@ -1,8 +1,9 @@
 from kfp import dsl,compiler
 from google.cloud import aiplatform
 from google.cloud import storage
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 import os
+import io
 from pathlib import Path
 import argparse
 import logging
@@ -41,6 +42,10 @@ image_tags = {"scraping": args.tag_scraping if args.tag_scraping else TAG,
 
 def mk_image_uri(task : str):
     return f"{REGION}-docker.pkg.dev/{PROJECT_ID}/{REPO}/{task}:{image_tags[task]}"
+
+def _env_from_secret(secret_env_var: str) -> dict:
+    content = os.environ.get(secret_env_var, "")
+    return dict(dotenv_values(stream=io.StringIO(content)))
 
 @dsl.container_component
 def run_scraping():
@@ -93,23 +98,29 @@ def create_pipeline(
     scraping_task = run_scraping()
     scraping_task.set_display_name('1. Scraping Data')
     scraping_task.set_caching_options(False)
+    for k, v in _env_from_secret("SCRAPING_ENV").items():
+        scraping_task.set_env_variable(k, v)
 
     # Step 2: Run cleaning
-    #cleaning_task = run_clean()
     cleaning_task = run_clean().after(scraping_task)
     cleaning_task.set_display_name('2. Cleaning Data')
     cleaning_task.set_caching_options(False)
+    for k, v in _env_from_secret("MODELING_ENV").items():
+        cleaning_task.set_env_variable(k, v)
 
     # Step 3: Run api
-    #api_task = run_api()
     api_task = run_api().after(cleaning_task)
     api_task.set_display_name('3. API step')
     api_task.set_caching_options(False)
+    for k, v in _env_from_secret("API_ENV").items():
+        api_task.set_env_variable(k, v)
 
     # Step 4: Run cadastral
     cadastral_task = run_cadastral().after(api_task)
     cadastral_task.set_display_name('4. Get cadastral data')
     cadastral_task.set_caching_options(False)
+    for k, v in _env_from_secret("CADASTRAL_ENV").items():
+        cadastral_task.set_env_variable(k, v)
 
     # # Step 4: Run cleaning and prediction
     # clean_predict_task = run_predict().after(geocoding_task)
