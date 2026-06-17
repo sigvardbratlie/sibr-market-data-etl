@@ -22,8 +22,8 @@ CLEANER_MAP = {
 }
 
 load_dotenv()
-if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
+if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'):
+    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON is not set.")
 
 # 2. Definer konstanter for å unngå "magiske strenger" og repetisjon
 SUPPORTED_DATASETS = ['cars', 'homes', 'rentals',"new_homes"]

@@ -48,7 +48,7 @@ class SibrBase:
 
     def setup(self):
         self.bq = CustomBigQuery(credentials = load_google_credentials(), dataset=self._dataset)
-        gcs = storage.Client(project=self._project_id)
+        gcs = storage.Client(credentials=load_google_credentials())
         self._bucket = gcs.bucket(self._bucket_name)
         logger.debug(f'Dataset: {self.dataset} | | Replace: {self.replace}')
 
