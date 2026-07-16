@@ -17,6 +17,7 @@ class FinnItem(Item):
     scrape_date = Field()
     country = Field()
     dealer = Field()
+    dealer_type = Field()
     contact_person = Field()
     phone = Field()
     email = Field()

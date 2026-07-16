@@ -51,6 +51,7 @@ emailer = Emailer(
             password = os.getenv("GMAIL_PASSWORD"))
 
 unimportant_map = {
+                "general" : ["web", "email", "contact_person"], 
                 "cars" : [
                         "total", 
                         'prev_owners',
@@ -86,7 +87,8 @@ unimportant_map = {
                 #'reg_num',
                 'referanse',
                 'dealer_rating',
-                'dealer_n_ratings'],
+                'dealer_n_ratings',
+                "condition"],
 "jobs" : ["total", 
             'positions_available',
             'dealer',
@@ -196,7 +198,7 @@ class BQPipeline:
         for key, count in nan.items():
             if key != "total" and self._nan['total'] > 0:
                 report += f"{key}: {count} NaN \t {(count/self._nan['total'])*100}% \n"
-                if key not in unimportant_map.get(spider.table_name, []) and (count/self._nan['total']) > 0.9:
+                if key not in (unimportant_map.get(spider.table_name, []) + unimportant_map.get("general", [])) and (count/self._nan['total']) > 0.9:
                     subject = f"High NaN Alert: {key} in {spider.table_name}"
                     body = f"The field '{key}' has a high NaN rate of {(count/self._nan['total'])*100:.2f}% in the '{spider.table_name}' table."
                     emailer.send_email(subject, body)

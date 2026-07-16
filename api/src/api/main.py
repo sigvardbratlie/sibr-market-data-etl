@@ -116,22 +116,23 @@ class ApiMain:
         #STATENS VEGVESEN har en request limit på 50.000 request pr dag
         limit = min(limit, 50000) if limit else 50000
 
-        fetched_ids = self.nosql_instance.fetch_collection_ids("statens_vegvesen")
-        logger.info(f'📋 Already fetched {len(fetched_ids)} items from Statens Vegvesen')
+        # fetched_ids = self.nosql_instance.fetch_collection_ids("statens_vegvesen")
+        # logger.info(f'📋 Already fetched {len(fetched_ids)} items from Statens Vegvesen. Ignoring')
         
         query = """
                 SELECT item_id, reg_num
                 FROM clean.cars c
-                WHERE c.item_id NOT IN UNNEST(@fetched_ids)
-                    AND reg_num IS NOT NULL
+                WHERE reg_num IS NOT NULL
+                    
                 """
         if limit:
             query += f'\nLIMIT {limit}'
-        params = ("fetched_ids", "STRING", fetched_ids)
+        # params = ("fetched_ids", "STRING", )
 
-        cars = self.datawarehouse.query_to_df(query, params=params)
+        cars = self.datawarehouse.query_to_df(query)
         cars.set_index("item_id", inplace=True)
         cars_input = cars["reg_num"].to_dict()
+        logger.info(f'🚗 Fetching {len(cars_input)} new items from Statens Vegvesen')
         try:
             await self.api.get_items_with_ids(inputs=cars_input,
                                                 fetcher=self.api.get_car,

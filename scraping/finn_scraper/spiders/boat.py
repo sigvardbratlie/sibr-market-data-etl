@@ -97,21 +97,11 @@ class BoatSpider(FinnBaseSpider):
         item['scrape_date'] = datetime.now().strftime('%Y-%m-%d')
         item['country'] = 'NO'
 
-        item['dealer'] = company_profile.get('orgName')
-        item['contact_person'] = company_profile.get('contacts', {})[0].get('name') if company_profile.get(
-            'contacts') else company_profile.get('contact', {}).get('name')
-        if company_profile.get('contacts',{}):
-            if company_profile.get('contacts')[0].get('phone', {}):
-                telefon_data_contacts = company_profile.get('contacts', [{}])[0].get('phone', [{}])[0] if company_profile.get(
-                    'contacts') else {}
-                item['phone'] = telefon_data_contacts.get('phoneFormatted') or telefon_data_contacts.get('tel')
-        if company_profile.get('contact', {}).get('phone', {}):
-            telefon_data_contact = company_profile.get('contact', {}).get('phone', [{}])[0] if company_profile.get(
-                'contact') else {}
-            item['phone'] = telefon_data_contact.get('phoneFormatted')
-        item['email'] = company_profile.get('contacts', [{}])[0].get('email') if company_profile.get(
-            'contacts') else company_profile.get('contact', {}).get('email')
-        item['web'] = company_profile.get('homepageUrl', None)
+        item['dealer'] = response.css("div.my-16.p-0\\! h3::text").get()
+        item['dealer_address'] = response.css('a[href*="google.com/maps"] > span:last-child::text').get()
+        item['contact_person'] = None
+        item['email'] = None
+        item['web'] = None
         item['dealer_rating'] = None
         item['dealer_n_ratings'] = None
 

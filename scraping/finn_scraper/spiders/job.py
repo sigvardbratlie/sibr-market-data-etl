@@ -115,7 +115,7 @@ class JobSpider(FinnBaseSpider):
         item['job_function'] = (response.css(f"ul.space-y-10 li span.pr-8.font-bold:contains('Stillingsfunksjon:') ~ a::text").getall()
                                 or self.get_info(response,'Stillingsfunksjon') or
                                 self.get_all_info(response,'Stillingsfunksjon') or response.css('dt:contains("Stillingsfunksjon") + dd::text').getall())
-        item['deadline'] = self.get_info(response, 'Frist') or response.css('dt:contains("Frist") + dd::text').get() or response.css(f"ul.grid li.flex.flex-col:contains('Frist') span.font-bold::text").get()
+        item['deadline'] = self.get_info(response, 'Frist') or response.css('dt:contains("Frist") + dd::text').get() or response.css(f"ul.grid li.flex.flex-col:contains('Søknadsfrist') span.font-bold::text").get()
         item['employment_type'] = self.get_info(response, 'Ansettelsesform') or response.css('dt:contains("Ansettelsesform") + dd::text').get() or response.css(f"ul.grid li.flex.flex-col:contains('Ansettelsesform') span.font-bold::text").get()
 
         item['positions_available'] = self.get_info(response,'Antall stillinger') or response.css('dt:contains("Antall stillinger") + dd::text').get()

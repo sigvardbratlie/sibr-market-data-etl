@@ -108,19 +108,19 @@ def create_pipeline(
     for k, v in _env_from_secret("MODELING_ENV").items():
         cleaning_task.set_env_variable(k, v)
 
-    # Step 3: Run api
-    api_task = run_api().after(cleaning_task)
-    api_task.set_display_name('3. API step')
-    api_task.set_caching_options(False)
-    for k, v in _env_from_secret("API_ENV").items():
-        api_task.set_env_variable(k, v)
+    # # Step 3: Run api
+    # api_task = run_api().after(cleaning_task)
+    # api_task.set_display_name('3. API step')
+    # api_task.set_caching_options(False)
+    # for k, v in _env_from_secret("API_ENV").items():
+    #     api_task.set_env_variable(k, v)
 
-    # Step 4: Run cadastral
-    cadastral_task = run_cadastral().after(api_task)
-    cadastral_task.set_display_name('4. Get cadastral data')
-    cadastral_task.set_caching_options(False)
-    for k, v in _env_from_secret("CADASTRAL_ENV").items():
-        cadastral_task.set_env_variable(k, v)
+    # # Step 4: Run cadastral
+    # cadastral_task = run_cadastral().after(api_task)
+    # cadastral_task.set_display_name('4. Get cadastral data')
+    # cadastral_task.set_caching_options(False)
+    # for k, v in _env_from_secret("CADASTRAL_ENV").items():
+    #     cadastral_task.set_env_variable(k, v)
 
     # # Step 4: Run cleaning and prediction
     # clean_predict_task = run_predict().after(geocoding_task)
