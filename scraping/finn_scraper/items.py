@@ -22,8 +22,9 @@ class FinnItem(Item):
     phone = Field()
     email = Field()
     web = Field()
-    dealer_rating = Field()  # ok
-    dealer_n_ratings = Field()  # ok
+    dealer_rating = Field()  
+    dealer_n_ratings = Field()
+    dealer_address = Field() 
 
 class CarItem(FinnItem):
     #PRICES
