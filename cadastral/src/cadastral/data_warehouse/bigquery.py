@@ -102,9 +102,10 @@ class BigQuery(DataBase):
             raise TypeError(f"Invalid explicit_schema value: {explicit_schema}. Expected a dictionary.")
 
         try:
-            self._bq_client.get_table(table_id)
+            target_table = self._bq_client.get_table(table_id)
             table_exists = True
         except Exception:
+            target_table = None
             table_exists = False
 
         schema = None
@@ -223,6 +224,15 @@ class BigQuery(DataBase):
                 job = self._bq_client.load_table_from_dataframe(df, staging_table_id, job_config=job_config)
                 job.result()  # Wait for the job to complete
                 logger.info(f"Staging table {staging_table_id} created with {len(df)} rows.")
+
+                if table_exists:
+                    staging_table = self._bq_client.get_table(staging_table_id)
+                    existing_field_names = {field.name for field in target_table.schema}
+                    new_fields = [field for field in staging_table.schema if field.name not in existing_field_names]
+                    if new_fields:
+                        logger.info(f"Schema evolution: adding new columns to {table_id}: {[f.name for f in new_fields]}")
+                        target_table.schema = list(target_table.schema) + new_fields
+                        target_table = self._bq_client.update_table(target_table, ["schema"])
 
                 on_condition = ' AND '.join([f'T.`{key}` = S.`{key}`' for key in merge_on])
 

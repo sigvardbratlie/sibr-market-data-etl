@@ -24,7 +24,7 @@ def add_stream_handler(format : str = '%(asctime)s - %(name)s - %(levelname)s - 
     stream_handler.setFormatter(formatter)
     logging.root.addHandler(stream_handler)
 
-def setup_logging():
+def setup_logging() -> None:
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=format)
     add_file_handler(format=format)

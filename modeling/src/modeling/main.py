@@ -6,9 +6,11 @@ from modeling.training import Train
 from modeling.predictions import Predict
 import logging
 from dotenv import load_dotenv
+from modeling.utils import setup_logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+setup_logging()
 
 noisy = ["urllib3", "google", ]
 [logging.getLogger(name).setLevel(logging.WARNING) for name in noisy]
@@ -50,7 +52,7 @@ def main():
     parser.add_argument('--no_save',
                         action='store_true',
                         help='Disable saving data to BigQuery. (Enabled by default)')
-    parser.add_argument('--replace', action='store_true', help='Replace existing data in BigQuery.')
+    parser.add_argument('-r','--replace', action='store_true', help='Replace existing data in BigQuery.')
 
     args = parser.parse_args()
 
