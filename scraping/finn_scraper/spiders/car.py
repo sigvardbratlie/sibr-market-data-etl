@@ -140,7 +140,7 @@ class CarSpider(FinnBaseSpider):
         item['scrape_date'] = datetime.now().strftime('%Y-%m-%d')
         item['country'] = 'NO'
 
-        item['dealer'] = response.css("div.my-16.p-0\\! h3::text").get()
+        item['dealer'] = response.css("div.my-16.p-0\\! h3::text").get() or response.css("h3.mb-4::text").get()
         item['dealer_address'] = response.css('a[href*="google.com/maps"] > span:last-child::text').get()
         item['contact_person'] = None
         

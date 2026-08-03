@@ -91,3 +91,5 @@ if __name__ == "__main__":
 
     end = datetime.now()
     logger.info(f"✅ Scraping completed in {end - start}")
+
+    #scrapy shell 'https://www.finn.no/mobility/item/471483663?ci=4' --pipeline {}      
