@@ -51,7 +51,7 @@ emailer = Emailer(
             password = os.getenv("GMAIL_PASSWORD"))
 
 unimportant_map = {
-                "general" : ["web", "email", "contact_person"], 
+                "general" : ["web", "email", "contact_person", "dealer"], 
                 "cars" : [
                         "total", 
                         'prev_owners',

@@ -33,17 +33,17 @@ class JobSpider(FinnBaseSpider):
 
     def get_contact_info(self, response, label):
         """Extract contact information"""
-        output = response.xpath(f"normalize-space(//ul[contains(@class, 'space-y-10')]//span[contains(@class, "
+        output = response.xpath(f"normalize-space(//ul[contains(@class, 'space-y-6')]//span[contains(@class, "
                               f"'font-bold') and normalize-space(.)='{label}:']/following-sibling::a[1]/text())").get()
-        if output == ',':
+        if not output or output == ',':
             output = None
         return output
 
     def get_info(self, response, label):
         """Extract info with multiple fallback selectors"""
-        output = response.xpath(f"normalize-space(//ul[contains(@class, 'space-y-10')]//span[contains(@class, "
+        output = response.xpath(f"normalize-space(//ul[contains(@class, 'space-y-6')]//span[contains(@class, "
                        f"'font-bold') and normalize-space(.)='{label}:']/following-sibling::text()[normalize-space()][1])").get()
-        if output == ',':
+        if not output or output == ',':
             output = None
         return output
 
@@ -80,7 +80,7 @@ class JobSpider(FinnBaseSpider):
     def get_info_dt(self,response,label):
         output = response.xpath(
             f"normalize-space(//dl[contains(@class, 'space-y-8')]/dt[contains(@class, 'font-bold') and normalize-space(.)='{label}']/following-sibling::dd[1]/text())").get()
-        if output == ',':
+        if not output or output == ',':
             output = None
         return output
 
@@ -92,36 +92,37 @@ class JobSpider(FinnBaseSpider):
         item = JobItem()
 
         # Basic info
-        item['item_id'] = response.css('li.flex.gap-x-16 strong:contains("FINN-kode") + span::text').get() or response.css('dt:contains("FINN-kode") + dd::text').get()
-        item['title'] = response.css('h2.t2.md\\:t1::text').get() or response.css('h1.mb-32.md\\:mb-24::text').get()
-        item['description'] = response.css('div.import-decoration ::text').getall()
+        item['item_id'] = response.css('li strong:contains("FINN-kode") + span::text').get() or response.css('dt:contains("FINN-kode") + dd::text').get()
+        item['title'] = response.css('h2.t2.md\\:t1::text').get() or response.css('h1.t3::text').get()
+        item['description'] = response.xpath('normalize-space((//div[contains(@class,"import-decoration")])[1])').get() or None
         item['url'] = response.url
-        item['address'] = response.css('h2.t3:contains("Firmaets beliggenhet") + p::text').get() or response.css('section[data-testid="job-location"] h2.h3.mb-16::text').get()
-        item['last_updated'] = response.css('li.flex.gap-x-16 strong:contains("Sist endret") + time::text').get() or response.css('dt:contains("Sist endret") + dd::text').get()
+        item['address'] = response.xpath('normalize-space(//h2[contains(@class,"t3") and contains(text(),"Firmaets beliggenhet")]/following-sibling::p[1])').get() or None
+        item['last_updated'] = response.css('strong:contains("Sist endret") + time::text').get() or response.css('dt:contains("Sist endret") + dd::text').get()
         item['scrape_date'] = datetime.now().strftime('%Y-%m-%d')
         item['country'] = 'NO'
         item['dealer'] = None
-        item['contact_person'] = self.get_all_info(response,'Kontaktperson') or self.get_info_dt(response,'Kontaktperson')
+        item['contact_person'] = response.css('p.contact-card-name::text').get() or self.get_all_info(response,'Kontaktperson') or self.get_info_dt(response,'Kontaktperson')
         item['phone'] = self.get_contact_info(response, 'Mobil') or self.get_contact_info(response, 'Telefon')
         item['email'] = self.get_contact_info(response, 'E-post')
-        item['web'] = response.css('ul.mb-0 li a:contains("Hjemmeside")::attr(href)').get()
+        item['web'] = response.css('w-link:contains("Hjemmeside")::attr(href)').get() or response.css('ul.mb-0 li a:contains("Hjemmeside")::attr(href)').get()
 
-        item['contact_title'] = self.get_all_info(response,'Stillingstittel') or self.get_info_dt(response,'Stillingstittel')
-        item['subtitle'] = response.css('h2.t2.md\\:t1 + p::text').get()
-        item['employer'] =  response.css('dt:contains("Arbeidsgiver") + dd::text').get() or response.css('h2.t2.md\\:t1 + p::text').get()
-        item['about_employer'] = response.css('div.import-decoration::text').getall()
-        item['sector'] = response.xpath("//li//span[contains(@class, 'font-bold') and contains(., 'Sektor')]/following::text()[normalize-space()][1]").get()
+        item['contact_title'] = response.css('p.contact-card-name + p::text').get() or self.get_all_info(response,'Stillingstittel') or self.get_info_dt(response,'Stillingstittel')
+        info_line_parts = response.css('div.text-caption.md\\:text-body.font-bold.md\\:font-normal::text').getall()
+        info_line = ''.join(info_line_parts).strip() if info_line_parts else None
+        item['subtitle'] = info_line
+        item['employer'] = response.css('div.header-logo-container strong::text').get() or response.css('dt:contains("Arbeidsgiver") + dd::text').get()
+        item['about_employer'] = response.xpath('normalize-space(//h2[contains(text(),"Om arbeidsgiveren")]/following-sibling::div[contains(@class,"import-decoration")][1])').get() or None
+        item['sector'] = response.css('li.flex span:contains("Sektor") + strong::text').get()
         item['industry'] = self.get_all_info(response,'Bransje') or response.css('dt:contains("Bransje") + dd::text').getall()
-        item['job_function'] = (response.css(f"ul.space-y-10 li span.pr-8.font-bold:contains('Stillingsfunksjon:') ~ a::text").getall()
-                                or self.get_info(response,'Stillingsfunksjon') or
-                                self.get_all_info(response,'Stillingsfunksjon') or response.css('dt:contains("Stillingsfunksjon") + dd::text').getall())
-        item['deadline'] = self.get_info(response, 'Frist') or response.css('dt:contains("Frist") + dd::text').get() or response.css(f"ul.grid li.flex.flex-col:contains('Søknadsfrist') span.font-bold::text").get()
-        item['employment_type'] = self.get_info(response, 'Ansettelsesform') or response.css('dt:contains("Ansettelsesform") + dd::text').get() or response.css(f"ul.grid li.flex.flex-col:contains('Ansettelsesform') span.font-bold::text").get()
+        item['job_function'] = (self.get_all_info(response,'Stillingsfunksjon')
+                                or self.get_info(response,'Stillingsfunksjon') or response.css('dt:contains("Stillingsfunksjon") + dd::text').getall())
+        item['deadline'] = response.css('li.flex span:contains("Søknadsfrist") + strong::text').get()
+        item['employment_type'] = info_line.split('∙')[0].strip() if info_line else (self.get_info(response, 'Ansettelsesform') or response.css('dt:contains("Ansettelsesform") + dd::text').get())
 
-        item['positions_available'] = self.get_info(response,'Antall stillinger') or response.css('dt:contains("Antall stillinger") + dd::text').get()
-        item['work_language'] = response.xpath("//li//span[contains(@class, 'font-bold') and contains(., 'Arbeidsspråk')]/following::text()[normalize-space()][1]").get()
-        item['remote_work'] = response.xpath("//li//span[contains(@class, 'font-bold') and contains(., 'Hjemmekontor')]/following::text()[normalize-space()][1]").get()
-        item['location'] = item['location'] = response.xpath("//li[.//span[contains(., 'Sted')]]/text()[normalize-space()]").getall()
+        item['positions_available'] = response.css('li.flex span:contains("Antall stillinger") + strong::text').get()
+        item['work_language'] = response.css('li.flex span:contains("Arbeidsspråk") + strong::text').get()
+        item['remote_work'] = response.css('li.flex span:contains("Mulighet for hjemmekontor") + strong::text').get()
+        item['location'] = response.xpath( '//li[span[contains(normalize-space(), "Sted")]]').xpath('string(.)').get()
         item['keywords'] = response.css('h2.t3:contains("Nøkkelord") + p::text').get()
 
         yield item
