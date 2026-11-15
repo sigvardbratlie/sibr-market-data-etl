@@ -37,4 +37,5 @@ for m in ["scraping", "modeling", "api", "cadastral"]:
     print(f"✔ sibr-{m}-env: {', '.join(data)}")
 OUT.write_text("\n".join(lines) + "\n")
 OUT.chmod(0o600)
-print(f"Skrev {OUT.relative_to(ROOT)}")
+print(f"Skrev {OUT.relative_to(ROOT)} (kun lokalt).")
+print("Secretene opprettes i clusteret først når du kjører: make deploy")

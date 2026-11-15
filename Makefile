@@ -36,7 +36,7 @@ build-push: ## Bygg og push multi-arch images til GHCR
 build-local: ## Bygg images lokalt (for docker compose)
 	docker compose --profile job build
 
-secrets: ## Generer values.secrets.yaml fra */.env
+secrets: ## Generer LOKAL values.secrets.yaml fra */.env (oppretter ingenting i clusteret)
 	python3 deploy/scripts/env-to-values.py
 
 namespace: ## Namespace med Pod Security restricted (én gang)
