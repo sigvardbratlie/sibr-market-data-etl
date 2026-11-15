@@ -1,0 +1,10 @@
+[Unit]
+Description=Kjør sibr-market pipeline kl 02:00 hver 3. dag (tilsvarer cron "0 2 */3 * *")
+
+[Timer]
+OnCalendar=*-*-01/3 02:00:00
+Persistent=true
+RandomizedDelaySec=5m
+
+[Install]
+WantedBy=timers.target

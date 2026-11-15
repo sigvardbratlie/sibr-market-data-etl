@@ -26,7 +26,6 @@ def add_stream_handler(format : str = '%(asctime)s - %(name)s - %(levelname)s - 
 
 def setup_logging():
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=format)
+    logging.basicConfig(level=logging.INFO, format=format)  # legger til stream-handler
     add_file_handler(format=format)
-    add_stream_handler(format=format)
     

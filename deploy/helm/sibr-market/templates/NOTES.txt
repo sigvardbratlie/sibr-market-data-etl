@@ -1,0 +1,17 @@
+sibr-market er installert i namespace {{ .Release.Namespace }}.
+
+{{- if .Values.pipeline.enabled }}
+Pipeline: {{ join " -> " .Values.pipeline.steps }}  |  plan: "{{ .Values.pipeline.schedule }}" ({{ .Values.timeZone }})
+{{- end }}
+
+Status:
+  kubectl -n {{ .Release.Namespace }} get cronjobs,jobs,pods
+
+Kjør pipelinen nå:
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "sibr.fullname" . }}-pipeline pipeline-manual-$(date +%s)
+
+Kjør ett steg manuelt (f.eks. api):
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "sibr.fullname" . }}-api api-manual-$(date +%s)
+
+Logger:
+  kubectl -n {{ .Release.Namespace }} logs -f job/<jobbnavn> --all-containers

@@ -1,0 +1,48 @@
+# Lokal kjøring av sibr-market-pipelinen (erstatter Vertex AI / Cloud Build).
+# Jobbene ligger bak profilen "job" slik at `docker compose up` ikke starter dem.
+# Kjør via pipelines/run.sh, eller enkeltvis: docker compose run --rm scraping
+
+x-job: &job
+  profiles: ["job"]
+  restart: "no"
+  init: true
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "3" }
+
+services:
+  scraping:
+    <<: *job
+    build: ./scraping
+    image: sibr/scraping:latest
+    env_file: ./scraping/.env
+    mem_limit: 4g
+
+  clean:
+    <<: *job
+    build: ./modeling
+    image: sibr/modeling:latest
+    env_file: ./modeling/.env
+    command: ["--run-clean"]
+    mem_limit: 6g
+
+  predict:
+    <<: *job
+    image: sibr/modeling:latest
+    env_file: ./modeling/.env
+    command: ["--run-predict"]
+    mem_limit: 6g
+
+  api:
+    <<: *job
+    build: ./api
+    image: sibr/api:latest
+    env_file: ./api/.env
+    command: ["--task", "all"]
+
+  cadastral:
+    <<: *job
+    build: ./cadastral
+    image: sibr/cadastral:latest
+    env_file: ./cadastral/.env
+    command: ["-up", "-s", "-ow"]

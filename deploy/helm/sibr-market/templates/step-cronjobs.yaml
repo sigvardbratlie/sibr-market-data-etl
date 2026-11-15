@@ -1,0 +1,40 @@
+{{- range $name, $step := .Values.steps }}
+{{- $s := $step.standalone | default dict }}
+{{- if $s.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sibr.fullname" $ }}-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "sibr.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  schedule: {{ $s.schedule | default $.Values.pipeline.schedule | quote }}
+  timeZone: {{ $.Values.timeZone | quote }}
+  suspend: {{ $s.suspend }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: {{ $.Values.pipeline.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "sibr.labels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $name }}
+    spec:
+      backoffLimit: {{ $s.backoffLimit | default 0 }}
+      activeDeadlineSeconds: {{ $s.activeDeadlineSeconds | default 21600 }}
+      ttlSecondsAfterFinished: {{ $.Values.pipeline.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          labels:
+            {{- include "sibr.labels" $ | nindent 12 }}
+            app.kubernetes.io/component: {{ $name }}
+        spec:
+          {{- include "sibr.podCommon" $ | nindent 10 }}
+          containers:
+            {{- include "sibr.container" (dict "root" $ "name" $name) | nindent 12 }}
+{{- end }}
+{{- end }}

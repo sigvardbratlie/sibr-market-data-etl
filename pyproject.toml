@@ -14,7 +14,4 @@ members = [
     "modeling",
     "cadastral",
     "api",
-    "pipelines",
-    "cadastral/bigquery-helper",
-    "bigquery-helper",
 ]
