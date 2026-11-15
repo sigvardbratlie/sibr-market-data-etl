@@ -12,6 +12,10 @@
 
 ## Logg
 
+### 2026-11-15 – modeling: torch fjernet
+- torch/torchmetrics fjernet fra `modeling` (kun brukt i playground-notebooks, ingen import i `src`). Image fortsatt ~3.1 GB pga. ubrukte deps (aiplatform, genai, databricks m.fl.) – kandidat for opprydding.
+- PR #1 merget 2026-11-15; CI bygget scraping/api/cadastral til GHCR.
+
 ### 2026-11-15 – Helm/k8s på Talos (branch `feat/helm`)
 - Ny Helm-chart `deploy/helm/sibr-market`: pipeline-CronJob (sekvensielle initContainers) + suspendert CronJob per steg, `timeZone: Europe/Oslo`, `concurrencyPolicy: Forbid`, `ttlSecondsAfterFinished`, Pod Security `restricted`, control-plane-toleration.
 - Dockerfiles: non-root UID 10001, `PYTHONUNBUFFERED`, torch fra CPU-index i modeling. `.env` lagt i alle `.dockerignore` (scraping/cadastral bakte tidligere `.env` inn i lokale builds).
