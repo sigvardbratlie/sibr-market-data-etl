@@ -12,9 +12,14 @@
 
 ## Logg
 
-### 2026-11-15 – modeling: torch fjernet
-- torch/torchmetrics fjernet fra `modeling` (kun brukt i playground-notebooks, ingen import i `src`). Image fortsatt ~3.1 GB pga. ubrukte deps (aiplatform, genai, databricks m.fl.) – kandidat for opprydding.
-- PR #1 merget 2026-11-15; CI bygget scraping/api/cadastral til GHCR.
+### 2026-11-15 – Ubrukte avhengigheter fjernet (branch `chore/prune-dependencies`)
+- Alle fire moduler: `pyproject.toml` inneholder kun pakker som faktisk importeres i `src` (+ `pyarrow`/`db-dtypes`/`bigquery-storage` for BigQuery <-> pandas). Test-pakker flyttet til `[dependency-groups] dev`. `requirements.txt` rekompilert (eksisterende pins beholdt). `scraping/requirements.in` slettet (pyproject er eneste kilde).
+- Pakker: scraping 94->65, modeling 117->51, api 94->45, cadastral 102->45. Fjernet bl.a. torch, aiplatform, genai, databricks-sql-connector, lightgbm, bigframes, geopandas, sibr-api, gcsfs, shapely.
+- modeling: `xgboost-cpu` på Linux (unngår ~400 MB nvidia-libs), vanlig `xgboost` på Mac. Image 3.1 GB -> 1.63 GB.
+- Bugfix: `cadastral/main.py` importerte `api.data_warehouse` (finnes ikke i cadastral-imaget -> krasj ved start). Nå `cadastral.data_warehouse`.
+- Slettet død og ødelagt `modeling/src/modeling/storage/` (ingen importerte den; importerte ikke-eksisterende moduler).
+- Verifisert: alle images bygger på arm64 og alle moduler i `src` importeres uten feil.
+- PR #1 merget 2026-11-15; CI bygget images til GHCR.
 
 ### 2026-11-15 – Helm/k8s på Talos (branch `feat/helm`)
 - Ny Helm-chart `deploy/helm/sibr-market`: pipeline-CronJob (sekvensielle initContainers) + suspendert CronJob per steg, `timeZone: Europe/Oslo`, `concurrencyPolicy: Forbid`, `ttlSecondsAfterFinished`, Pod Security `restricted`, control-plane-toleration.

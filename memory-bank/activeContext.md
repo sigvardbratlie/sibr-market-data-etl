@@ -24,4 +24,5 @@ Gjenstår for å få scraping i drift:
 - Proxy-credentials lå hardkodet i `scraping/finn_scraper/settings.py` i git-historikken (fjernet nå). **Bør roteres** hos proxy-leverandøren.
 - Raspberry Pi har ingen RTC: pods viste "56y ago" ved boot. Sjekk at NTP er synket (`talosctl time`) før cron-tider stoles på.
 - `*/3` i dag-i-måned nullstilles ved månedsskifte (31. -> 1.). Akseptert.
-- modeling-imaget (torch m.m.) er stort; ikke bygget/testet på arm64 ennå.
+- **Testene er utdaterte** (feiler likt på main før og etter dependency-opprydding): scraping 146 failed, modeling 150 errors (`CarsCleaner.__init__`-signatur), api ImportError (`DataApi` finnes ikke i `api`), cadastral 4 failed/2 errors (`kartverket_api_test.py` tester gammelt eksternt bibliotek). Må ryddes før CI kan kjøre tester.
+- Root `pyproject.toml` har fortsatt `databricks-connect` (ikke i noen images).
