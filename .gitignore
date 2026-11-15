@@ -106,3 +106,5 @@ examples/
 *ipynb
 
 *playground/
+# Helm secrets
+values.secrets.yaml

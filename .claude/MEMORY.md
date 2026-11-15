@@ -1,3 +1,5 @@
+> Primær prosjektkontekst ligger i `memory-bank/` (projectBrief, activeContext, progress). Denne fila gjelder kun api-testoppsettet.
+
 # Project Memory: sibr-market-data-etl
 
 ## Prosjektstruktur
@@ -26,7 +28,7 @@
 
 ## Kjøre tester
 ```bash
-/Users/sigvardbratlie/PycharmProjects/sibr-market-data-etl/.venv/bin/python -m pytest api/tests/ -v
+.venv/bin/python -m pytest api/tests/ -v
 ```
 Eller fra api/-mappen:
 ```bash

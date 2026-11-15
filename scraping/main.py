@@ -9,6 +9,9 @@ from finn_scraper.spiders.boat import BoatSpider
 from finn_scraper.spiders.new_home import NewHomeSpider
 from scrapy.utils.project import get_project_settings
 from scrapy.utils.log import configure_logging
+from scrapy.utils.reactor import install_reactor
+from twisted.internet import defer
+import sys
 from datetime import datetime
 import argparse
 import os
@@ -19,8 +22,8 @@ logger = logging.getLogger(__name__)
 setup_logging()
 
 load_dotenv()
-if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
-    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS is not set.")
+if not os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'):
+    logger.warning("⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON is not set (base64 service account key).")
     #raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Please set it to the path of your Google Cloud service account JSON key file.")
 
 map_spiders = {'homes': HomeSpider,
@@ -58,6 +61,8 @@ if __name__ == "__main__":
     for handler in logging.getLogger().handlers:
         handler.setLevel(getattr(logging,args.log_level.upper(), logging.INFO))
 
+    # Installer asyncio-reactoren eksplisitt før vi importerer `reactor` (ellers får vi epoll)
+    install_reactor(settings.get("TWISTED_REACTOR"))
     process = CrawlerProcess(settings=settings)
     logger.info("🕷️  -------- NEW SCRAPING JOB STARTED --------")
 
@@ -73,22 +78,45 @@ if __name__ == "__main__":
             exit(1) # Avslutter skriptet hvis filen ikke finnes
 
     spiders_to_run = [map_spiders[spider] for spider in args.spiders if args.spiders and spider in map_spiders]
-    for spider in spiders_to_run:
+    if args.urls_file and not urls_to_scrape:
+        raise TypeError(f'No urls in file {args.urls_file}')
+
+    def spider_kwargs():
         if args.other_urls:
-            logger.info(f"➕ Adding spider '{spider.name}' with custom URLs: {args.other_urls}")
-            process.crawl(spider, other_urls=args.other_urls)
-        elif args.urls_file:
-            if not urls_to_scrape:
-                raise TypeError(f'No urls in file {args.urls_file}')
-            logger.info(f"➕ Adding spider '{spider.name}' — {len(urls_to_scrape)} URLs from file")
-            process.crawl(spider, other_urls=urls_to_scrape)
-        else:
-            logger.info(f"➕ Adding spider '{spider.name}' with default URLs")
-            process.crawl(spider)
+            return {"other_urls": args.other_urls}
+        if args.urls_file:
+            return {"other_urls": urls_to_scrape}
+        return {}
+
+    # Kjør spiderne én om gangen, så vi ikke sender trafikk fra 7 spidere samtidig
+    failed = []
+
+    @defer.inlineCallbacks
+    def crawl_sequentially():
+        from twisted.internet import reactor
+        try:
+            for spider in spiders_to_run:
+                logger.info(f"▶ Starting spider '{spider.name}'")
+                crawler = process.create_crawler(spider)
+                yield process.crawl(crawler, **spider_kwargs())
+                if crawler.stats.get_value("finish_reason") == "shutdown":
+                    logger.warning("⛔ Shutdown requested, skipping remaining spiders")
+                    break
+        except Exception:
+            logger.exception("❌ Scraping failed")
+            failed.append(True)
+        finally:
+            if reactor.running:
+                reactor.stop()
 
     logger.info(f"🚀 Starting scraping — spiders: {', '.join(spider.name for spider in spiders_to_run)}")
-    process.start()
+    from twisted.internet import reactor
+    reactor.callWhenRunning(crawl_sequentially)
+    process.start(stop_after_crawl=False)
 
     end = datetime.now()
+    if failed:
+        logger.error(f"❌ Scraping failed after {end - start}")
+        sys.exit(1)
     logger.info(f"✅ Scraping completed in {end - start}")
     #scrapy shell -s ITEM_PIPELINES={} https://www.finn.no/job/ad/474829355

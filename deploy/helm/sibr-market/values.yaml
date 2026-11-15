@@ -1,0 +1,162 @@
+# -----------------------------------------------------------------------------
+# sibr-market – Helm values
+#
+# To mekanismer:
+#   1. pipeline:  ÉN CronJob som kjører `pipeline.steps` sekvensielt i én pod
+#                 (alle steg unntatt det siste er initContainers -> kjøres i
+#                 rekkefølge, og neste starter kun hvis forrige lyktes).
+#   2. steps.<x>.standalone: én CronJob per steg. Default suspendert – fungerer
+#                 som mal for manuelle kjøringer:
+#                   kubectl -n sibr-market create job --from=cronjob/sibr-market-api api-manual
+#                 Sett suspend:false + schedule for å kjøre steget på egen plan.
+# -----------------------------------------------------------------------------
+
+image:
+  registry: ghcr.io/sigvardbratlie
+  prefix: sibr-            # -> ghcr.io/sigvardbratlie/sibr-scraping:<tag>
+  tag: latest              # overstyr med git-sha for reproduserbare deploys: --set image.tag=sha-abc1234
+  pullPolicy: Always
+
+# Anbefalt: gjør GHCR-pakkene public (repoet er public uansett) -> ingen pull secret.
+# Private pakker: sett imageCredentials i values.secrets.yaml, så lager chartet
+# pull secret og bruker den automatisk. Ekstra eksisterende secrets kan listes her.
+imagePullSecrets: []
+imageCredentials: {}
+
+# Secret-navn -> nøkler/verdier. ALDRI fyll inn her; bruk gitignored
+# values.secrets.yaml (se values.secrets.example.yaml). Tom = chartet forventer
+# at secretene allerede finnes i namespacet.
+secrets: {}
+
+timeZone: Europe/Oslo
+
+pipeline:
+  enabled: true
+  # "Hver 3. dag kl 02:00". NB: */3 på dag-i-måneden nullstilles ved månedsskifte
+  # (31. -> 1. gir 1 dags mellomrom). Det er standard cron-semantikk.
+  schedule: "0 2 */3 * *"
+  suspend: false
+  # Rekkefølge. Første omgang kun scraping. Full kjede:
+  #   [scraping, clean, api, cadastral, predict]
+  steps:
+    - scraping
+  concurrencyPolicy: Forbid          # aldri to kjøringer samtidig
+  startingDeadlineSeconds: 3600      # tar igjen en bom-kjøring hvis noden var nede < 1t
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  backoffLimit: 0                    # ikke kjør hele pipelinen på nytt ved feil (scraping er tung)
+  activeDeadlineSeconds: 43200       # 12t hard grense
+  ttlSecondsAfterFinished: 604800    # rydd ferdige Jobs etter 7 dager
+
+# Felles for alle steg
+env:
+  PYTHONUNBUFFERED: "1"
+  TZ: Europe/Oslo
+
+steps:
+  scraping:
+    image: scraping
+    args: []                         # alle spiders. Eks: ["--spiders", "homes", "cars"]
+    secretName: sibr-scraping-env
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits:   { cpu: "2",  memory: 4Gi }
+    standalone:
+      enabled: true
+      suspend: true
+      schedule: ""                   # tom = arver pipeline.schedule (kreves av API selv om suspendert)
+      activeDeadlineSeconds: 43200
+
+  clean:
+    image: modeling
+    args: ["--run-clean"]
+    secretName: sibr-modeling-env
+    resources:
+      requests: { cpu: 500m, memory: 2Gi }
+      limits:   { cpu: "3",  memory: 5Gi }
+    standalone:
+      enabled: true
+      suspend: true
+      schedule: ""
+      activeDeadlineSeconds: 21600
+
+  api:
+    image: api
+    args: ["--task", "all"]
+    secretName: sibr-api-env
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits:   { cpu: "2",  memory: 2Gi }
+    standalone:
+      enabled: true
+      suspend: true
+      schedule: ""
+      activeDeadlineSeconds: 21600
+
+  cadastral:
+    image: cadastral
+    args: ["-up", "-s", "-ow"]
+    secretName: sibr-cadastral-env
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits:   { cpu: "2",  memory: 2Gi }
+    standalone:
+      enabled: true
+      suspend: true
+      schedule: ""
+      activeDeadlineSeconds: 21600
+
+  predict:
+    image: modeling
+    args: ["--run-predict"]
+    secretName: sibr-modeling-env
+    resources:
+      requests: { cpu: 500m, memory: 2Gi }
+      limits:   { cpu: "3",  memory: 5Gi }
+    standalone:
+      enabled: true
+      suspend: true
+      schedule: ""
+      activeDeadlineSeconds: 21600
+
+  # Trening er ikke en del av default-pipelinen; kjør manuelt ved behov.
+  train:
+    image: modeling
+    args: ["--run-train"]
+    secretName: sibr-modeling-env
+    resources:
+      requests: { cpu: "1", memory: 3Gi }
+      limits:   { cpu: "4", memory: 6Gi }
+    standalone:
+      enabled: true
+      suspend: true
+      schedule: ""
+      activeDeadlineSeconds: 43200
+
+serviceAccount:
+  create: true
+  name: ""
+
+# Pod Security "restricted"-kompatibelt. Imagene kjører som UID 10001.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+# Single-node Talos: control-plane har NoSchedule-taint. Denne tolerasjonen
+# lar jobbene kjøre der. Fjern når det finnes egne worker-noder.
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+nodeSelector: {}
+affinity: {}

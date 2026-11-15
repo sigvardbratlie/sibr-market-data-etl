@@ -1,0 +1,49 @@
+{{- if .Values.pipeline.enabled }}
+{{- $p := .Values.pipeline }}
+{{- $steps := $p.steps | required "pipeline.steps kan ikke være tom" }}
+{{- $last := last $steps }}
+{{- $init := initial $steps }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sibr.fullname" . }}-pipeline
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "sibr.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pipeline
+  annotations:
+    sibr/steps: {{ join " -> " $steps | quote }}
+spec:
+  schedule: {{ $p.schedule | quote }}
+  timeZone: {{ .Values.timeZone | quote }}
+  suspend: {{ $p.suspend }}
+  concurrencyPolicy: {{ $p.concurrencyPolicy }}
+  startingDeadlineSeconds: {{ $p.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ $p.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ $p.failedJobsHistoryLimit }}
+  jobTemplate:
+    metadata:
+      labels:
+        {{- include "sibr.labels" . | nindent 8 }}
+        app.kubernetes.io/component: pipeline
+    spec:
+      backoffLimit: {{ $p.backoffLimit }}
+      activeDeadlineSeconds: {{ $p.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ $p.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          labels:
+            {{- include "sibr.labels" . | nindent 12 }}
+            app.kubernetes.io/component: pipeline
+        spec:
+          {{- include "sibr.podCommon" . | nindent 10 }}
+          {{- if $init }}
+          # initContainers kjøres sekvensielt; neste starter kun når forrige har exit 0
+          initContainers:
+            {{- range $init }}
+            {{- include "sibr.container" (dict "root" $ "name" .) | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          containers:
+            {{- include "sibr.container" (dict "root" $ "name" $last) | nindent 12 }}
+{{- end }}

@@ -1,0 +1,12 @@
+[Unit]
+Description=sibr-market ETL pipeline
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=__USER__
+WorkingDirectory=__REPO__
+ExecStart=__REPO__/pipelines/run.sh --update
+TimeoutStartSec=12h

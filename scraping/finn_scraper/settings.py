@@ -28,11 +28,16 @@ NEWSPIDER_MODULE = "finn_scraper.spiders"
 ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 32
+# Lavt tempo mot finn.no. Spiderne kjøres sekvensielt fra main.py.
+# DOWNLOAD_DELAY er minste tid mellom forespørsler per domene -> 0.25s gir maks ~4 req/s.
+CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 16
+DOWNLOAD_DELAY = 0.3
+RANDOMIZE_DOWNLOAD_DELAY = True
 AUTOTHROTTLE_ENABLED = True
 AUTOTHROTTLE_START_DELAY = 0.1
 AUTOTHROTTLE_MAX_DELAY = 10
-AUTOTHROTTLE_TARGET_CONCURRENCY = 8.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 5.0
 RETRY_HTTP_CODES = [429, 500, 502, 503, 504, 522, 524, 408]
 RETRY_TIMES = 5
 LOG_FILE = 'sibr-market-scraping.log'
@@ -56,11 +61,7 @@ if CLOUD_LOGGING_ENABLED:
 else:
     logging.getLogger().info('Cloud logging is disabled. Using local logging configuration.')
 
-# Stream handler with same format
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(log_level)
-stream_handler.setFormatter(logging.Formatter('%(asctime)s [%(name)s] %(levelname)s: %(message)s'))
-logging.getLogger().addHandler(stream_handler)
+# Stream-logging settes opp i scraping.utils.setup_logging (main.py)
 
 
 # Configure a delay for requests for the same website (default: 0)
@@ -71,8 +72,6 @@ logging.getLogger().addHandler(stream_handler)
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # CONCURRENT_REQUESTS_PER_IP = 16
 
-HTTP_PROXY = 'http://sigvarbrat49411:jgytj0vcj8@154.21.32.105:21309'
-HTTPS_PROXY = 'http://sigvarbrat49411:jgytj0vcj8@154.21.32.105:21309'
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -96,7 +95,6 @@ HTTPS_PROXY = 'http://sigvarbrat49411:jgytj0vcj8@154.21.32.105:21309'
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
    "finn_scraper.middlewares.FinnScraperDownloaderMiddleware": 543,
-   'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
 }
 
 # Enable or disable extensions

@@ -48,6 +48,8 @@ tests/
 *.yml
 *.yaml
 
-
-
-
+# Secrets skal aldri bakes inn i image
+.env
+.env.*
+*.env
+gcloud-keys.json

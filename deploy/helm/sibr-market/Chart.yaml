@@ -1,0 +1,8 @@
+apiVersion: v2
+name: sibr-market
+description: sibr-market ETL (scraping, modeling, api, cadastral) som Kubernetes CronJobs
+type: application
+version: 0.1.0
+appVersion: "latest"
+maintainers:
+  - name: sigvardbratlie

@@ -27,15 +27,15 @@ Finn.no ──► Scraping ──► BigQuery (raw.*)
 | **modeling** | Data cleaning, preprocessing, and ML training (XGBoost, CatBoost, LightGBM) for price predictions |
 | **cadastral** | Property enrichment via Kartverket Grunnbok API (ownership, transfers, legal status) |
 | **api** | Geocoding (Geonorge/Nominatim) and vehicle data enrichment (Statens Vegvesen) |
-| **pipelines** | Vertex AI pipeline orchestration with Kubeflow Pipelines |
+| **deploy** | Helm chart: Kubernetes CronJobs on a self-hosted Talos cluster (Raspberry Pi, arm64) |
 
 ## Tech Stack
 
 - **Python 3.11** / **UV** package manager
 - **Scrapy + Playwright** for scraping
 - **XGBoost, CatBoost, LightGBM** for ML
-- **Google Cloud**: BigQuery, Cloud Storage, Firestore, Vertex AI, Secret Manager, Cloud Build
-- **Kubeflow Pipelines** for orchestration
+- **Google Cloud**: BigQuery, Cloud Storage, Firestore (storage only)
+- **Kubernetes + Helm** (Talos Linux on Raspberry Pi) for scheduling, **GHCR** for images
 
 ## Setup
 
@@ -103,11 +103,12 @@ python main.py --task statens-vegvesen
 python main.py --task all
 ```
 
-### Pipelines
+### Pipeline on Kubernetes
+
+See [deploy/README.md](deploy/README.md).
 
 ```bash
-cd pipelines
-python pipeline.py --commit-sha <sha> --run --skip-schedule
+make secrets && make deploy && make run-now
 ```
 
 ## Testing
@@ -119,12 +120,7 @@ pytest modeling/tests/
 
 ## Deployment
 
-Deployment is handled via Google Cloud Build. A push to `main` with `"gcloud build"` in the commit message triggers:
-
-1. Docker image builds for each module
-2. Push to Artifact Registry (`europe-west1-docker.pkg.dev/sibr-market/sibr-market-repo/`)
-3. Vertex AI pipeline compilation and deployment
-
+Images are built for arm64 by GitHub Actions on push to `main` (`.github/workflows/images.yml`) and pushed to `ghcr.io/sigvardbratlie/sibr-<module>`. The Helm chart in `deploy/helm/sibr-market` runs the pipeline as a Kubernetes CronJob every 3rd day at 02:00 (Europe/Oslo). Previous GCP setup (Cloud Build + Vertex AI) lives in `legacy/`.
 
 ## Project Structure
 
@@ -134,7 +130,8 @@ sibr-market-data-etl/
 ├── modeling/          # ML pipeline (clean, train, predict)
 ├── cadastral/         # Kartverket property enrichment
 ├── api/               # Geocoding & vehicle data enrichment
-├── pipelines/         # Vertex AI orchestration (KFP)
-├── cloudbuild.yaml    # CI/CD configuration
+├── deploy/            # Helm chart + scripts for k8s
+├── memory-bank/       # Project context across sessions
+├── legacy/            # Old GCP / Pi-systemd setup
 └── pyproject.toml     # UV workspace definition
 ```
