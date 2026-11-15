@@ -3,10 +3,10 @@
 _Sist oppdatert: 2026-11-15_
 
 ## Nå: første deploy av scraping til Talos-clusteret (branch `feat/helm`)
-Helm-chart, Dockerfiles, CI og secrets-script er skrevet og validert (`helm lint` + `kubectl apply --dry-run=server` mot clusteret; scraping-image bygget og røyktestet lokalt på arm64). **Ikke deployet, ikke committet ennå.**
+Helm-chart, Dockerfiles, CI og secrets-script er skrevet og validert (`helm lint` + `kubectl apply --dry-run=server` mot clusteret; scraping-image bygget og røyktestet lokalt på arm64). Committet og pushet; **PR #1** (`feat/helm` -> `main`): https://github.com/sigvardbratlie/sibr-market-data-etl/pull/1. Ikke deployet ennå. Namespace: `sibr-market`.
 
 Gjenstår for å få scraping i drift:
-1. Commit + push `feat/helm` -> merge til `main` (trigger `images`-workflow -> GHCR). Alternativ: `make login build-push MODULES=scraping` fra Mac.
+1. Merge PR #1 til `main` (trigger `images`-workflow -> GHCR). Sjekk at alle fire images bygger på arm64.
 2. Sett GHCR-pakkene til public (eller `imageCredentials` i values.secrets.yaml).
 3. `make secrets` (genererer values.secrets.yaml) -> `make deploy` -> `make run-now` -> `make logs`.
 
