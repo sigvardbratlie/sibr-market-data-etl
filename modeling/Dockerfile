@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY . .
 # Ikke-root bruker med fast UID, så podene oppfyller Pod Security "restricted"

@@ -1,6 +1,6 @@
 #from kartverkets_api.kartverket import kartverketsAPI
 from cadastral.kartverket import kartverketsAPI
-from api.data_warehouse import BigQuery, load_google_credentials
+from cadastral.data_warehouse import BigQuery, load_google_credentials
 import logging
 import argparse
 import asyncio
